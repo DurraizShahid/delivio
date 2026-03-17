@@ -1,6 +1,8 @@
+# Backend (Node) — build from repo root; Dockerfile uses apps/server
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+watchPatterns = ["apps/server/**", "Dockerfile", ".dockerignore"]
 
 [deploy]
 numReplicas = 1
