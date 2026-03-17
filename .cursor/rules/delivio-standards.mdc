@@ -1,0 +1,27 @@
+---
+description: Delivio project standards (UI, DB schema, deployment, UI libs)
+alwaysApply: true
+---
+
+# Delivio Standards
+
+## Rule 1 — UI components quality bar
+
+- **Use best-possible UI components**: prioritize clean aesthetics, strong UX, accessibility, and reliability over quick hacks.
+- **Consistency first**: keep spacing/typography/colors consistent; reuse existing patterns/components before introducing new ones.
+- **Accessibility is required**: keyboard navigation, focus states, labels/aria where needed, and sensible empty/loading/error states.
+- **Production-ready behavior**: responsive layouts, stable state management, and no janky layout shifts.
+
+## Rule 2 — Database schema + migrations discipline
+
+- **Document every schema change**: whenever the DB schema changes, update the canonical schema file used by this repo.
+- **Always add migrations**: every schema change must ship with proper migrations (no “manual edits only”).
+- **Keep schema and migrations in sync**: ensure local/dev/prod can reach the same schema via migrations; don’t leave drift.
+- **Migration safety**: prefer additive, backward-compatible migrations; include data backfills when needed.
+
+## Rule 3 — Deployment + UI library constraints
+
+- **Backend deploy target**: we deploy the backend on Railway—avoid introducing infra assumptions that conflict with Railway.
+- **Frontend components**: use shadcn/ui components by default; only introduce another component library when strictly necessary.
+- **Icons**: use Lucide icons only (no additional icon packs unless explicitly requested).
+
