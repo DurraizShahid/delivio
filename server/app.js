@@ -51,8 +51,17 @@ if (config.sentry.enabled) {
     environment: config.env,
     tracesSampleRate: config.isProd ? 0.1 : 1.0,
   });
-  app.use(Sentry.Handlers.requestHandler());
-  logger.info('Sentry: request handler registered');
+
+  // Support both older and newer @sentry/node Express APIs
+  if (Sentry.Handlers && typeof Sentry.Handlers.requestHandler === 'function') {
+    app.use(Sentry.Handlers.requestHandler());
+  } else if (typeof Sentry.expressRequestHandler === 'function') {
+    app.use(Sentry.expressRequestHandler());
+  } else {
+    logger.warn('Sentry request handler not available on this version — skipping registration');
+  }
+
+  logger.info('Sentry: initialised');
 }
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
@@ -61,7 +70,14 @@ app.use('/api', routes);
 // ─── Sentry Error Handler (before global error handler) ───────────────────────
 if (config.sentry.enabled) {
   const Sentry = require('@sentry/node');
-  app.use(Sentry.Handlers.errorHandler());
+
+  if (Sentry.Handlers && typeof Sentry.Handlers.errorHandler === 'function') {
+    app.use(Sentry.Handlers.errorHandler());
+  } else if (typeof Sentry.expressErrorHandler === 'function') {
+    app.use(Sentry.expressErrorHandler());
+  } else {
+    logger.warn('Sentry error handler not available on this version — skipping registration');
+  }
 }
 
 // ─── 404 + Global Error Handler (must be last) ────────────────────────────────
