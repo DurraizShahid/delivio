@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Type Check & Test
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Type check (frontend)
+        run: npx tsc --noEmit
+
+      - name: Run backend tests with coverage
+        run: npm run test:coverage
+        working-directory: server
+        env:
+          NODE_ENV: test
+          REDIS_URL: redis://localhost:6379
+          SESSION_SECRET: test-secret-for-ci
+          JWT_SECRET: test-jwt-secret-for-ci
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://test.supabase.co' }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || 'test-key' }}
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY || '' }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: server/coverage/
+
+  build-docker:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: delivio-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

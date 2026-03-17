@@ -1,0 +1,838 @@
+{
+  "info": {
+    "name": "Delivio Backend — Full API",
+    "description": "Complete Postman collection for the Delivio multi-tenant delivery platform backend.\n\nSetup:\n1. Import this collection\n2. Set the `baseUrl` variable to your server (e.g. http://localhost:8080)\n3. Set `projectRef` to your Supabase project reference\n4. Run \"Admin Login\" first — cookies auto-propagate\n5. For customer flows, run \"OTP Send\" → \"OTP Verify\"",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "projectRef", "value": "your-project-ref", "type": "string" },
+    { "key": "adminEmail", "value": "admin@delivio.test", "type": "string" },
+    { "key": "adminPassword", "value": "Password123!", "type": "string" },
+    { "key": "customerPhone", "value": "+447700900000", "type": "string" },
+    { "key": "orderId", "value": "", "type": "string" },
+    { "key": "deliveryId", "value": "", "type": "string" },
+    { "key": "conversationId", "value": "", "type": "string" },
+    { "key": "cartItemId", "value": "", "type": "string" },
+    { "key": "preAuthToken", "value": "", "type": "string" },
+    { "key": "resetToken", "value": "", "type": "string" },
+    { "key": "otpCode", "value": "123456", "type": "string" },
+    { "key": "stripePaymentIntentId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "description": "Public endpoints — no authentication required",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/health",
+            "description": "Returns server health status, timestamp, env, and version."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Body has status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Geocode Address",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/geocode?address=10 Downing Street London",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "geocode"],
+              "query": [{ "key": "address", "value": "10 Downing Street London" }]
+            },
+            "description": "Proxies Google Maps Geocoding API. Requires GOOGLE_MAPS_API_KEY in env."
+          }
+        },
+        {
+          "name": "Public Read — Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/{{projectRef}}/products",
+            "description": "Reads products for a project. Allowed tables: products, categories, menus, workspaces, orders (requires orderId), deliveries (requires orderId)."
+          }
+        },
+        {
+          "name": "Public Read — Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/{{projectRef}}/categories"
+          }
+        },
+        {
+          "name": "Public Read — Menus",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/{{projectRef}}/menus"
+          }
+        },
+        {
+          "name": "Public Read — Order by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/public/{{projectRef}}/orders?orderId={{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "public", "{{projectRef}}", "orders"],
+              "query": [{ "key": "orderId", "value": "{{orderId}}" }]
+            },
+            "description": "Orders table requires orderId query param to prevent mass data exposure."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth — Admin",
+      "description": "Admin (email/password) authentication flows",
+      "item": [
+        {
+          "name": "Admin Signup",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/signup",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"role\": \"admin\",\n  \"projectRef\": \"{{projectRef}}\"\n}"
+            },
+            "description": "Creates a new admin/vendor/rider user. Roles: admin, vendor, rider."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('User created', () => pm.expect(pm.response.json().user).to.exist);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "Login with email/password. If 2FA enabled, returns requiresTwoFactor + preAuthToken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.requiresTwoFactor) {",
+                  "  pm.collectionVariables.set('preAuthToken', json.preAuthToken);",
+                  "  console.log('2FA required — preAuthToken saved. Use Auth > 2FA Login next.');",
+                  "}",
+                  "pm.test('Login response OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Session",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/session",
+            "description": "Returns the currently authenticated admin user (requires session cookie)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Session active', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().user).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "Destroys admin session and clears cookie."
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/forgot-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\"\n}"
+            },
+            "description": "Always returns 200 (no user enumeration). Sends reset email if user exists."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"password\": \"NewPassword123!\"\n}"
+            },
+            "description": "Reset password using the token received via email."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth — 2FA (TOTP)",
+      "description": "Two-Factor Authentication setup and login",
+      "item": [
+        {
+          "name": "2FA Setup",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/2fa/setup",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "Requires active admin session. Returns TOTP secret + QR code data URL. Scan the QR with Google Authenticator / Authy."
+          }
+        },
+        {
+          "name": "2FA Verify (Activate)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/2fa/verify",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"000000\"\n}"
+            },
+            "description": "Verify TOTP token from authenticator app to ACTIVATE 2FA. Replace 000000 with real token."
+          }
+        },
+        {
+          "name": "2FA Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/2fa/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionToken\": \"{{preAuthToken}}\",\n  \"totpToken\": \"000000\"\n}"
+            },
+            "description": "Second step of 2FA login. Use the preAuthToken from Admin Login + current TOTP code."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth — Customer OTP",
+      "description": "Phone-based customer authentication via SMS OTP",
+      "item": [
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/otp/send",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{customerPhone}}\",\n  \"projectRef\": \"{{projectRef}}\"\n}"
+            },
+            "description": "Sends 6-digit OTP to phone via SMS (or console.log in dev). Rate limited: 3 sends per 15 min."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/otp/verify",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"{{customerPhone}}\",\n  \"code\": \"{{otpCode}}\",\n  \"projectRef\": \"{{projectRef}}\",\n  \"name\": \"Test Customer\",\n  \"email\": \"customer@test.com\"\n}"
+            },
+            "description": "Verify OTP. If customer doesn't exist, creates them (findOrCreate). Sets customer_session cookie."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  pm.test('Customer session created', () => pm.expect(pm.response.json().customer).to.exist);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer Session",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/customer/session",
+            "description": "Returns current customer session (requires customer_session cookie)."
+          }
+        },
+        {
+          "name": "Customer Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/customer/logout",
+            "description": "Destroys customer session and clears cookie."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "description": "Order management (requires admin session + project ref)",
+      "item": [
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/orders?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" },
+                { "key": "status", "value": "pending", "disabled": true },
+                { "key": "customerId", "value": "", "disabled": true }
+              ]
+            },
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "List orders with optional filters: status, customerId, limit, offset."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const orders = pm.response.json().orders;",
+                  "  if (orders && orders.length > 0) {",
+                  "    pm.collectionVariables.set('orderId', orders[0].id);",
+                  "    console.log('orderId saved: ' + orders[0].id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"name\": \"Margherita Pizza\",\n      \"quantity\": 2,\n      \"unitPriceCents\": 1200\n    },\n    {\n      \"name\": \"Garlic Bread\",\n      \"quantity\": 1,\n      \"unitPriceCents\": 500\n    }\n  ],\n  \"totalCents\": 2900\n}"
+            },
+            "description": "Create a new order with items. Usually triggered by Stripe webhook, but available for manual creation."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('orderId', pm.response.json().order.id);",
+                  "  console.log('orderId saved: ' + pm.response.json().order.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Get a single order with its items by ID."
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/status",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted_by_vendor\"\n}"
+            },
+            "description": "Update order status. Valid values: pending, accepted_by_vendor, preparing, ready, picked_up, delivered, cancelled, scheduled."
+          }
+        },
+        {
+          "name": "Refund Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/refund",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountCents\": 2900,\n  \"reason\": \"Customer requested refund\"\n}"
+            },
+            "description": "Refund a paid order. Requires payment_status = 'paid'. amountCents optional (defaults to full order total)."
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/orders/{{orderId}}/cancel",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer changed their mind\",\n  \"initiator\": \"customer\"\n}"
+            },
+            "description": "Cancel an order. Only cancellable if status is pending/accepted_by_vendor/preparing/scheduled. Auto-refunds if paid."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "description": "Shopping cart (guest + authenticated). Cart session tracked via cart_session cookie.",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cart",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Returns current cart with items and totalCents. Creates cart_session cookie if missing."
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cart",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Double Cheeseburger\",\n  \"quantity\": 2,\n  \"unitPriceCents\": 1500\n}"
+            },
+            "description": "Add item to cart. productId (UUID) is optional."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('cartItemId', pm.response.json().item.id);",
+                  "  console.log('cartItemId saved: ' + pm.response.json().item.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/cart/{{cartItemId}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}"
+            },
+            "description": "Update item quantity. Set to 0 to remove."
+          }
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cart/{{cartItemId}}",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Remove item from cart."
+          }
+        },
+        {
+          "name": "Merge Guest Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cart/merge",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestSessionId\": \"paste-guest-cart-session-id-here\"\n}"
+            },
+            "description": "Merge a guest cart into an authenticated customer's cart. Requires customer_session cookie."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Deliveries",
+      "description": "Delivery management & rider tracking (requires admin/rider session + project ref)",
+      "item": [
+        {
+          "name": "List Rider Deliveries",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/deliveries/rider/deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "deliveries", "rider", "deliveries"],
+              "query": [
+                { "key": "status", "value": "assigned", "disabled": true },
+                { "key": "zoneId", "value": "", "disabled": true }
+              ]
+            },
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "List deliveries for the currently authenticated rider. Optional filters: status, zoneId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json().deliveries;",
+                  "  if (d && d.length > 0) {",
+                  "    pm.collectionVariables.set('deliveryId', d[0].id);",
+                  "    console.log('deliveryId saved: ' + d[0].id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Claim Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/deliveries/{{deliveryId}}/claim",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Rider claims an unassigned delivery. Returns 409 if already claimed."
+          }
+        },
+        {
+          "name": "Update Delivery Status",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/deliveries/{{deliveryId}}/status",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"picked_up\"\n}"
+            },
+            "description": "Update delivery status. Valid values: assigned, picked_up, delivered."
+          }
+        },
+        {
+          "name": "Update Rider Location",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/deliveries/{{deliveryId}}/location",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lat\": 51.5074,\n  \"lon\": -0.1278,\n  \"heading\": 90,\n  \"speed\": 15.5\n}"
+            },
+            "description": "Update rider GPS location. Rate limited to 1 update per 3 seconds. Cached in Redis, broadcast via WebSocket."
+          }
+        },
+        {
+          "name": "Get Rider Location",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/deliveries/{{deliveryId}}/location",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Get last cached rider location for a delivery."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "description": "Stripe payment processing",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/payments/create-intent",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountCents\": 2900,\n  \"currency\": \"gbp\",\n  \"metadata\": {\n    \"orderId\": \"optional-order-ref\"\n  }\n}"
+            },
+            "description": "Creates a Stripe PaymentIntent. Returns clientSecret for frontend Stripe.js confirmPayment. Requires auth."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.paymentIntentId) {",
+                  "    pm.collectionVariables.set('stripePaymentIntentId', json.paymentIntentId);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stripe Webhook (for reference)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/webhooks/stripe",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "t=...,v1=..." }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test\",\n      \"amount\": 2900,\n      \"currency\": \"gbp\",\n      \"metadata\": {}\n    }\n  }\n}"
+            },
+            "description": "Stripe sends webhooks here automatically. DO NOT call manually — Stripe signature verification will fail. This is here for reference only. Use `stripe listen --forward-to localhost:8080/api/webhooks/stripe` for local testing."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "description": "In-app messaging between customers, vendors, and riders (requires auth + project ref)",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/chat/conversations",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"type\": \"customer_vendor\"\n}"
+            },
+            "description": "Create or get a conversation for an order. Types: customer_vendor, vendor_rider. Idempotent — returns existing conversation if one exists."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const code = pm.response.code;",
+                  "if (code === 200 || code === 201) {",
+                  "  pm.collectionVariables.set('conversationId', pm.response.json().conversation.id);",
+                  "  console.log('conversationId saved: ' + pm.response.json().conversation.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/chat/conversations",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "List all conversations for the current user."
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello! Your order is being prepared and will be ready in 15 minutes.\"\n}"
+            },
+            "description": "Send a message in a conversation. Max 2000 chars. Broadcasts via WebSocket + push notification to offline recipient."
+          }
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "conversations", "{{conversationId}}", "messages"],
+              "query": [{ "key": "page", "value": "1" }]
+            },
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Get paginated message history for a conversation. 50 messages per page."
+          }
+        },
+        {
+          "name": "Mark Conversation Read",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/read",
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Mark all messages in a conversation as read by the current user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Push Notifications",
+      "description": "Device push token management (requires auth + project ref)",
+      "item": [
+        {
+          "name": "Register Push Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/push/register",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Project-Ref", "value": "{{projectRef}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"firebase-device-token-here\",\n  \"platform\": \"web\"\n}"
+            },
+            "description": "Register a device push token. Platforms: web, ios, android. Upserts per user+platform."
+          }
+        },
+        {
+          "name": "Unregister Push Token",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/push/register?platform=web",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "push", "register"],
+              "query": [{ "key": "platform", "value": "web" }]
+            },
+            "header": [{ "key": "X-Project-Ref", "value": "{{projectRef}}" }],
+            "description": "Remove push token for current user. Specify platform as query param."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workspace",
+      "description": "Workspace/store configuration management (requires admin session + project ref)",
+      "item": [
+        {
+          "name": "Get Workspace",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/workspace/{{projectRef}}",
+            "description": "Get workspace configuration for a project."
+          }
+        },
+        {
+          "name": "Update Workspace",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/workspace/{{projectRef}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_name\": \"Delivio Pizza\",\n  \"currency\": \"GBP\",\n  \"timezone\": \"Europe/London\"\n}"
+            },
+            "description": "Update workspace settings."
+          }
+        },
+        {
+          "name": "Get Block Content",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/workspace/{{projectRef}}/blocks",
+            "description": "Get all content blocks for the workspace (hero, about, menu sections, etc.)."
+          }
+        },
+        {
+          "name": "Save Block Content",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/workspace/{{projectRef}}/blocks",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blocks\": [\n    {\n      \"blockId\": \"hero\",\n      \"content\": {\n        \"title\": \"Welcome to Delivio Pizza\",\n        \"subtitle\": \"Fresh pizza delivered to your door\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Upsert content blocks for the workspace."
+          }
+        }
+      ]
+    }
+  ]
+}
