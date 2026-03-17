@@ -1,28 +1,15 @@
-# ─── Stage 1: Build frontend ──────────────────────────────────────────────────
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --include=dev
-
-COPY . .
-RUN npm run build
-
-# ─── Stage 2: Production server ───────────────────────────────────────────────
-FROM node:20-alpine AS production
+FROM node:20-alpine
 
 # Security: run as non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S delivio -u 1001
 
 WORKDIR /app
 
-# Copy backend dependencies only
+# Install backend dependencies
 COPY server/package*.json ./server/
-RUN cd server && npm ci --only=production && cd ..
+RUN cd server && npm ci --only=production
 
-# Copy built frontend and server source
-COPY --from=frontend-build /app/dist ./dist
+# Copy backend source
 COPY --chown=delivio:nodejs server ./server
 
 USER delivio
