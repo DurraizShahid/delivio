@@ -1,6 +1,12 @@
 node_modules
 **/node_modules
-apps/web
+apps/customer
+apps/vendor
+apps/rider
+apps/customer-mobile
+apps/vendor-mobile
+apps/rider-mobile
+packages
 .turbo
 **/.turbo
 .next
