@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ClipboardList, ChevronRight } from "lucide-react";
 import {
   Card,
@@ -11,9 +13,30 @@ import {
   PriceDisplay,
 } from "@delivio/ui";
 import { useOrders } from "@/hooks/use-orders";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function OrdersPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   const { data: orders, isLoading } = useOrders();
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="mx-auto max-w-md px-4 pt-6">

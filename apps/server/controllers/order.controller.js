@@ -30,7 +30,15 @@ const statusMessages = {
 async function listOrders(req, res, next) {
   try {
     const { status, customerId, limit, offset } = req.query;
-    const orders = await orderModel.findByProjectRef(req.projectRef, { status, customerId, limit, offset });
+    const callerRole = getCallerRole(req);
+    const effectiveCustomerId = callerRole === 'customer' ? req.customer.id : customerId;
+
+    const orders = await orderModel.findByProjectRef(req.projectRef, {
+      status,
+      customerId: effectiveCustomerId,
+      limit,
+      offset,
+    });
     return res.json({ orders });
   } catch (err) {
     next(err);
@@ -44,6 +52,11 @@ async function getOrder(req, res, next) {
     const order = await orderModel.findWithItems(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.project_ref !== req.projectRef) return res.status(403).json({ error: 'Access denied' });
+
+    const callerRole = getCallerRole(req);
+    if (callerRole === 'customer' && order.customer_id !== req.customer.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     // Include delivery and vendor for rating/tip UI
     const [delivery, vendorUsers] = await Promise.all([
@@ -136,6 +149,10 @@ async function updateOrderStatus(req, res, next) {
     if (order.project_ref !== req.projectRef) return next(createError('Access denied', 403));
 
     const previousStatus = order.status;
+    if (previousStatus === status) {
+      const current = await orderModel.findById(id);
+      return res.json({ order: current, idempotent: true });
+    }
     orderModel.validateTransition(previousStatus, status);
     await orderModel.updateStatus(id, status);
 
@@ -226,11 +243,20 @@ async function cancelOrder(req, res, next) {
     const order = await orderModel.findWithItems(id);
     if (!order) return next(createError('Order not found', 404));
     if (order.project_ref !== req.projectRef) return next(createError('Access denied', 403));
+
+    const callerRole = getCallerRole(req);
+    if (callerRole === 'customer' && order.customer_id !== req.customer.id) {
+      return next(createError('Access denied', 403));
+    }
+    if (order.status === 'cancelled') {
+      return res.json({ ok: true, idempotent: true });
+    }
     if (!orderModel.isCancellable(order)) {
       return next(createError(`Cannot cancel order with status: ${order.status}`, 400));
     }
 
-    await orderModel.cancel(id, { reason, initiator });
+    const effectiveInitiator = callerRole === 'customer' ? 'customer' : (initiator || callerRole || 'system');
+    await orderModel.cancel(id, { reason, initiator: effectiveInitiator });
 
     // Auto-refund if already paid
     if (order.payment_status === 'paid' && order.payment_intent_id) {
@@ -259,7 +285,7 @@ async function cancelOrder(req, res, next) {
       action: 'order.cancelled',
       resourceType: 'order',
       resourceId: id,
-      details: { reason, initiator },
+      details: { reason, initiator: effectiveInitiator },
       ip: req.ip,
     });
 
@@ -280,6 +306,10 @@ async function rejectOrder(req, res, next) {
     if (!order) return next(createError('Order not found', 404));
     if (order.project_ref !== req.projectRef) return next(createError('Access denied', 403));
 
+    if (order.status === 'rejected') {
+      const current = await orderModel.findById(id);
+      return res.json({ order: current, idempotent: true });
+    }
     await orderModel.reject(id, reason);
     const updatedOrder = await orderModel.findById(id);
 
@@ -321,6 +351,10 @@ async function acceptOrder(req, res, next) {
     const order = await orderModel.findById(id);
     if (!order) return next(createError('Order not found', 404));
     if (order.project_ref !== req.projectRef) return next(createError('Access denied', 403));
+    if (order.status === 'accepted') {
+      const current = await orderModel.findById(id);
+      return res.json({ order: current, idempotent: true });
+    }
     if (order.status !== 'placed') {
       return next(createError(`Cannot accept order with status: ${order.status}`, 400));
     }
@@ -375,6 +409,10 @@ async function completeOrder(req, res, next) {
 
     const delivery = await deliveryModel.findByOrderId(id);
     if (!delivery) return next(createError('No delivery found for this order', 400));
+    const callerRole = getCallerRole(req);
+    if (callerRole === 'rider' && delivery.rider_id && delivery.rider_id !== req.user.id) {
+      return next(createError('Access denied', 403));
+    }
     if (delivery.status !== 'arrived') {
       return next(createError(`Cannot complete order — delivery status is: ${delivery.status}`, 400));
     }

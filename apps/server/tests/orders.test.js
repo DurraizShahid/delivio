@@ -63,10 +63,10 @@ describe('GET /api/orders', () => {
 
   it('filters by status', async () => {
     sessionService.getAdminSession.mockResolvedValue(ADMIN_SESSION);
-    db.select.mockResolvedValue([makeOrder({ status: 'delivered' })]);
-    const res = await request(app).get('/api/orders?status=delivered').set('Cookie', ADMIN_COOKIE);
+    db.select.mockResolvedValue([makeOrder({ status: 'completed' })]);
+    const res = await request(app).get('/api/orders?status=completed').set('Cookie', ADMIN_COOKIE);
     expect(res.status).toBe(200);
-    expect(res.body.orders[0].status).toBe('delivered');
+    expect(res.body.orders[0].status).toBe('completed');
   });
 });
 
@@ -110,20 +110,20 @@ describe('PATCH /api/orders/:id/status', () => {
     sessionService.getAdminSession.mockResolvedValue(ADMIN_SESSION);
     db.select.mockResolvedValue([]);
     const res = await request(app).patch(`/api/orders/${IDS.ORDER}/status`)
-      .set('Cookie', ADMIN_COOKIE).send({ status: 'accepted_by_vendor' });
+      .set('Cookie', ADMIN_COOKIE).send({ status: 'accepted' });
     expect(res.status).toBe(404);
   });
 
   it('updates status and broadcasts WS event', async () => {
     sessionService.getAdminSession.mockResolvedValue(ADMIN_SESSION);
-    const order = makeOrder();
+    const order = makeOrder({ status: 'placed' });
     db.select.mockResolvedValue([order]);
-    db.update.mockResolvedValue({ ...order, status: 'accepted_by_vendor', updated_at: new Date().toISOString() });
+    db.update.mockResolvedValue({ ...order, status: 'accepted', updated_at: new Date().toISOString() });
     const res = await request(app).patch(`/api/orders/${IDS.ORDER}/status`)
-      .set('Cookie', ADMIN_COOKIE).send({ status: 'accepted_by_vendor' });
+      .set('Cookie', ADMIN_COOKIE).send({ status: 'accepted' });
     expect(res.status).toBe(200);
     expect(ws.broadcast).toHaveBeenCalledWith('test-project-ref',
-      expect.objectContaining({ type: 'order:status_changed', status: 'accepted_by_vendor' }));
+      expect.objectContaining({ type: 'order:status_changed', status: 'accepted' }));
   });
 });
 
@@ -156,7 +156,7 @@ describe('POST /api/orders/:id/refund', () => {
 describe('POST /api/orders/:id/cancel', () => {
   it('returns 400 for non-cancellable status', async () => {
     sessionService.getAdminSession.mockResolvedValue(ADMIN_SESSION);
-    db.select.mockResolvedValue([makeOrder({ status: 'delivered' })]);
+    db.select.mockResolvedValue([makeOrder({ status: 'completed' })]);
     const res = await request(app).post(`/api/orders/${IDS.ORDER}/cancel`)
       .set('Cookie', ADMIN_COOKIE).send({ reason: 'test' });
     expect(res.status).toBe(400);
@@ -166,7 +166,7 @@ describe('POST /api/orders/:id/cancel', () => {
   it('cancels a pending order', async () => {
     sessionService.getAdminSession.mockResolvedValue(ADMIN_SESSION);
     db.select
-      .mockResolvedValueOnce([makeOrder({ status: 'pending', payment_status: 'unpaid' })])
+      .mockResolvedValueOnce([makeOrder({ status: 'placed', payment_status: 'unpaid' })])
       .mockResolvedValueOnce([makeCustomer()]);
     const res = await request(app).post(`/api/orders/${IDS.ORDER}/cancel`)
       .set('Cookie', ADMIN_COOKIE).send({ reason: 'Out of stock', initiator: 'vendor' });

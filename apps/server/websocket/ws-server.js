@@ -205,6 +205,20 @@ function isUserOnline(projectRef, userId) {
   return false;
 }
 
+/**
+ * List unique user IDs with at least one active connection for a role.
+ */
+function listOnlineUsersByRole(projectRef, role) {
+  const projectConns = registry.get(projectRef);
+  if (!projectConns) return [];
+
+  const ids = new Set();
+  for (const { userId, role: connRole, ws } of projectConns.values()) {
+    if (connRole === role && ws.readyState === WebSocket.OPEN) ids.add(userId);
+  }
+  return Array.from(ids);
+}
+
 function safeSend(ws, message) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(message));
@@ -219,4 +233,4 @@ function getStats() {
   return stats;
 }
 
-module.exports = { init, broadcast, sendToUser, isUserOnline, getStats };
+module.exports = { init, broadcast, sendToUser, isUserOnline, listOnlineUsersByRole, getStats };

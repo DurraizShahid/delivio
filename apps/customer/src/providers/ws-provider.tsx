@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useState,
   useRef,
   useCallback,
 } from "react";
@@ -18,37 +19,38 @@ const WS_URL =
     .replace(/^http/, "ws") + "/ws";
 
 export function WSProvider({ children }: { children: React.ReactNode }) {
-  const clientRef = useRef<WSClient | null>(null);
+  const [client, setClient] = useState<WSClient | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const client = createWSClient(WS_URL);
-    clientRef.current = client;
-    client.connect();
+    const wsClient = createWSClient(WS_URL);
+    wsClient.connect();
+    setClient(wsClient);
 
     const unsubs = [
-      client.subscribe("order:status_changed", () => {
+      wsClient.subscribe("order:status_changed", () => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
       }),
-      client.subscribe("order:rejected", () => {
+      wsClient.subscribe("order:rejected", () => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
       }),
-      client.subscribe("order:delayed", () => {
+      wsClient.subscribe("order:delayed", () => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
       }),
-      client.subscribe("chat:message", () => {
+      wsClient.subscribe("chat:message", () => {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }),
     ];
 
     return () => {
       unsubs.forEach((u) => u());
-      client.disconnect();
+      wsClient.disconnect();
+      setClient(null);
     };
   }, [queryClient]);
 
   return (
-    <WSContext.Provider value={clientRef.current}>
+    <WSContext.Provider value={client}>
       {children}
     </WSContext.Provider>
   );

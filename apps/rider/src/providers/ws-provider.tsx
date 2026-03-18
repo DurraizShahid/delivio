@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
 } from "react";
 import { createWSClient, type WSClient } from "@delivio/api";
 import type { WSEvent } from "@delivio/types";
@@ -18,12 +19,10 @@ const WS_URL =
     .replace(/^http/, "ws") + "/ws";
 
 export function WSProvider({ children }: { children: React.ReactNode }) {
-  const clientRef = useRef<WSClient | null>(null);
   const queryClient = useQueryClient();
+  const client = useMemo(() => createWSClient(WS_URL), []);
 
   useEffect(() => {
-    const client = createWSClient(WS_URL);
-    clientRef.current = client;
     client.connect();
 
     const unsubs = [
@@ -42,10 +41,10 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
       unsubs.forEach((u) => u());
       client.disconnect();
     };
-  }, [queryClient]);
+  }, [client, queryClient]);
 
   return (
-    <WSContext.Provider value={clientRef.current}>
+    <WSContext.Provider value={client}>
       {children}
     </WSContext.Provider>
   );
@@ -61,7 +60,9 @@ export function useWSEvent<T extends WSEvent["type"]>(
 ) {
   const ws = useWS();
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   const stableHandler = useCallback(
     (event: Extract<WSEvent, { type: T }>) => handlerRef.current(event),

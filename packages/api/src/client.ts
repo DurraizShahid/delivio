@@ -99,6 +99,12 @@ export interface ApiClient {
       id: string,
       location: { lat: number; lon: number; heading?: number; speed?: number }
     ): Promise<void>;
+    updateRiderAvailability(location: {
+      lat: number;
+      lon: number;
+      heading?: number;
+      speed?: number;
+    }): Promise<void>;
     getLocation(id: string): Promise<RiderLocation>;
     arrived(id: string): Promise<Delivery>;
     assign(id: string, riderId: string): Promise<Delivery>;
@@ -246,6 +252,8 @@ export function createApiClient(baseUrl: string): ApiClient {
         post(`/api/deliveries/${id}/status`, { status }),
       updateLocation: (id, location) =>
         post(`/api/deliveries/${id}/location`, location),
+      updateRiderAvailability: (location) =>
+        post(`/api/deliveries/rider/location`, location),
       getLocation: (id) => get(`/api/deliveries/${id}/location`),
       arrived: (id) => post(`/api/deliveries/${id}/arrived`),
       assign: (id, riderId) => post(`/api/deliveries/${id}/assign`, { riderId }),

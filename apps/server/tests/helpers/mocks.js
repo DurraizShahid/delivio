@@ -48,7 +48,7 @@ function makeOrder(overrides = {}) {
     id: IDS.ORDER,
     project_ref: 'test-project-ref',
     customer_id: IDS.CUSTOMER,
-    status: 'pending',
+    status: 'placed',
     payment_status: 'unpaid',
     payment_intent_id: null,
     total_cents: 2500,

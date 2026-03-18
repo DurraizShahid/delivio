@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MessageCircle, ChevronRight } from "lucide-react";
 import {
   Card,
@@ -9,9 +11,30 @@ import {
   EmptyState,
 } from "@delivio/ui";
 import { useConversations } from "@/hooks/use-chat";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function ChatListPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   const { data: conversations, isLoading } = useConversations();
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
+        {[1, 2].map((i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="mx-auto max-w-md px-4 pt-6">

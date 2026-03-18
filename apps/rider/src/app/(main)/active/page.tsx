@@ -81,8 +81,12 @@ export default function ActiveDeliveryPage() {
       }
       toast.success(`Status updated to ${next.replace("_", " ")}`);
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update status");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Failed to update status";
+      toast.error(message);
     } finally {
       setUpdating(false);
     }

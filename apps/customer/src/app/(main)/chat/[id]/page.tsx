@@ -22,8 +22,14 @@ export default function ChatPage() {
   const { id: conversationId } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const customer = useAuthStore((s) => s.customer);
+  const { customer, isAuthenticated, isLoading: authLoading } = useAuthStore();
   const ws = useWS();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
   const { data: messages, isLoading } = useMessages(conversationId);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -40,6 +46,17 @@ export default function ChatPage() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <Skeleton className="h-10 w-2/3 rounded-lg" />
+        <Skeleton className="h-10 w-3/4 rounded-lg" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();

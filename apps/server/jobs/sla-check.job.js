@@ -6,6 +6,7 @@ const orderModel = require('../models/order.model');
 const notificationService = require('../services/notification.service');
 const wsServer = require('../websocket/ws-server');
 const logger = require('../lib/logger');
+const { acquireLock, releaseLock } = require('../lib/lock');
 
 /**
  * Every 60 seconds: find orders whose SLA deadline has passed but
@@ -13,6 +14,8 @@ const logger = require('../lib/logger');
  */
 function start() {
   const task = cron.schedule('* * * * *', async () => {
+    const lock = await acquireLock('lock:job:sla-check', 55_000);
+    if (!lock) return;
     try {
       const now = new Date().toISOString();
       const breached = await supabaseFetch(
@@ -43,6 +46,8 @@ function start() {
       }
     } catch (err) {
       logger.error('SLA check job error', { error: err.message });
+    } finally {
+      await releaseLock(lock);
     }
   });
 

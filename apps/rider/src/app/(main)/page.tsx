@@ -32,8 +32,12 @@ export default function AvailableDeliveriesPage() {
       await api.deliveries.claim(deliveryId);
       toast.success("Delivery claimed!");
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to claim delivery");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Failed to claim delivery";
+      toast.error(message);
     } finally {
       setClaimingId(null);
     }

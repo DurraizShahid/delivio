@@ -19,6 +19,7 @@ import {
 } from "@delivio/ui";
 import { cn } from "@delivio/ui";
 import { useOrder } from "@/hooks/use-orders";
+import { useAuthStore } from "@/stores/auth-store";
 import { useWSEvent } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
 import type { OrderStatus, Order } from "@delivio/types";
@@ -134,7 +135,26 @@ function StarRating({
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   const { data: rawOrder, isLoading } = useOrder(id);
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 px-4 pt-4">
+        <Skeleton className="h-6 w-1/3" />
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-48 w-full rounded-lg" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
   const order = rawOrder ? normalizeOrder(rawOrder) : null;
 
   const [vendorRating, setVendorRating] = useState(0);

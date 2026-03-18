@@ -4,6 +4,7 @@ const cron = require('node-cron');
 const { getRedis } = require('../lib/redis');
 const deliveryModel = require('../models/delivery.model');
 const logger = require('../lib/logger');
+const { acquireLock, releaseLock } = require('../lib/lock');
 
 /**
  * Every 30 seconds: flush in-flight rider locations from Redis cache
@@ -13,6 +14,9 @@ function start() {
   const task = cron.schedule('*/30 * * * * *', async () => {
     const redis = getRedis();
     if (!redis) return; // No Redis — nothing to flush
+
+    const lock = await acquireLock('lock:job:location-flush', 25_000);
+    if (!lock) return;
 
     try {
       const keys = await redis.keys('location:*');
@@ -43,6 +47,8 @@ function start() {
       }
     } catch (err) {
       logger.error('Location flush job error', { error: err.message });
+    } finally {
+      await releaseLock(lock);
     }
   });
 

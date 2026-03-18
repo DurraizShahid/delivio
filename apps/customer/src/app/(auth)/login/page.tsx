@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,8 +12,15 @@ const PROJECT_REF = process.env.NEXT_PUBLIC_PROJECT_REF || "demo";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const setCustomer = useAuthStore((s) => s.setCustomer);
   const [step, setStep] = useState<"phone" | "otp">("phone");
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isLoading, router]);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);

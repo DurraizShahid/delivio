@@ -56,6 +56,9 @@ export interface OrderDelivery {
   id: string;
   riderId?: string | null;
   status: DeliveryStatus;
+  isExternal?: boolean;
+  externalRiderName?: string;
+  externalRiderPhone?: string;
 }
 
 export interface Order {

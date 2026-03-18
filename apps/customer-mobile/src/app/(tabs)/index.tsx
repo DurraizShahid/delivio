@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -90,25 +91,20 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               onPress={() => router.push(`/restaurant/${item.projectRef}`)}
             >
-              <View style={styles.cardImage}>
-                {item.bannerUrl ? (
-                  <View style={styles.imagePlaceholder}>
-                    <Ionicons
-                      name="image-outline"
-                      size={32}
-                      color={colors.mutedForeground}
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.imagePlaceholder}>
-                    <Ionicons
-                      name="restaurant"
-                      size={32}
-                      color={colors.mutedForeground}
-                    />
-                  </View>
-                )}
-              </View>
+              {item.bannerUrl ? (
+                <Image
+                  source={{ uri: item.bannerUrl }}
+                  style={styles.cardImage}
+                />
+              ) : (
+                <View style={styles.cardImagePlaceholder}>
+                  <Ionicons
+                    name="restaurant-outline"
+                    size={32}
+                    color={colors.mutedForeground}
+                  />
+                </View>
+              )}
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle} numberOfLines={1}>
                   {item.name}
@@ -197,13 +193,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardImage: {
+    width: "100%",
     height: 140,
-    backgroundColor: colors.muted,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
   },
-  imagePlaceholder: {
-    flex: 1,
-    justifyContent: "center",
+  cardImagePlaceholder: {
+    width: "100%",
+    height: 140,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    backgroundColor: colors.muted,
     alignItems: "center",
+    justifyContent: "center",
   },
   cardBody: {
     padding: spacing.lg,

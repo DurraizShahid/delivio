@@ -2,6 +2,7 @@
 
 const { createPaymentIntent, constructWebhookEvent } = require('../services/stripe.service');
 const orderModel = require('../models/order.model');
+const stripeEventModel = require('../models/stripe-event.model');
 const notificationService = require('../services/notification.service');
 const wsServer = require('../websocket/ws-server');
 const { writeAuditLog } = require('../lib/audit');
@@ -37,7 +38,14 @@ async function stripeWebhook(req, res, next) {
       return res.status(400).json({ error: 'Webhook signature verification failed' });
     }
 
-    logger.info('Stripe webhook received', { type: event.type });
+    // Idempotency: Stripe may retry events; ensure we only process once.
+    const isNew = await stripeEventModel.recordOnce({ eventId: event.id, type: event.type });
+    if (!isNew) {
+      logger.info('Stripe webhook duplicate ignored', { type: event.type, eventId: event.id });
+      return res.json({ received: true, duplicate: true });
+    }
+
+    logger.info('Stripe webhook received', { type: event.type, eventId: event.id });
 
     switch (event.type) {
       case 'payment_intent.succeeded': {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -19,8 +19,15 @@ import type { User } from "@delivio/types";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isLoading, router]);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -32,8 +39,12 @@ export default function LoginPage() {
       setUser(result.user as unknown as User);
       toast.success("Welcome back!");
       router.push("/");
-    } catch (err: any) {
-      toast.error(err.message || "Invalid email or password");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Invalid email or password";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

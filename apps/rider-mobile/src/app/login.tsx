@@ -30,8 +30,12 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const res = await api.auth.login(email.trim(), password);
-      setUser(res.user);
-      router.replace("/(tabs)");
+      if (res?.user) {
+        setUser(res.user as any);
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert("Error", "Invalid credentials");
+      }
     } catch (err: any) {
       Alert.alert("Login failed", err.message || "Invalid credentials.");
     } finally {

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { PackageCheck, Bike, Clock, MessageCircle, User } from "lucide-react";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
-import { cn } from "@delivio/ui";
+import { useRiderAvailabilityLocation } from "@/hooks/use-rider-availability";
+import { Skeleton, cn } from "@delivio/ui";
 
 const navItems = [
   { href: "/", label: "Available", icon: PackageCheck },
@@ -22,11 +23,34 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const hydrate = useAuthStore((s) => s.hydrate);
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  useRiderAvailabilityLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="space-y-3 w-full max-w-md px-4">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
 
   return (
     <WSProvider>

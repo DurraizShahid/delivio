@@ -129,6 +129,29 @@ async function checkLocationRateLimit(deliveryId) {
   return true;
 }
 
+// ─── Rider Availability Location (for matching) ──────────────────────────────
+
+async function cacheRiderAvailability(projectRef, riderId, locationData) {
+  await getStore().set(
+    `rider:availability:${projectRef}:${riderId}`,
+    locationData,
+    config.location.cacheTTL
+  );
+}
+
+async function getRiderAvailability(projectRef, riderId) {
+  return getStore().get(`rider:availability:${projectRef}:${riderId}`);
+}
+
+async function cacheDeliverySearchRadius(deliveryId, radiusKm, ttlSeconds = 3600) {
+  await getStore().set(`delivery:radius:${deliveryId}`, { radiusKm }, ttlSeconds);
+}
+
+async function getDeliverySearchRadius(deliveryId) {
+  const entry = await getStore().get(`delivery:radius:${deliveryId}`);
+  return entry?.radiusKm ?? null;
+}
+
 module.exports = {
   getStore,
   createAdminSession,
@@ -149,4 +172,8 @@ module.exports = {
   getRiderLocation,
   flushLocationCache,
   checkLocationRateLimit,
+  cacheRiderAvailability,
+  getRiderAvailability,
+  cacheDeliverySearchRadius,
+  getDeliverySearchRadius,
 };

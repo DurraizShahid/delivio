@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, User, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -10,14 +11,21 @@ import {
   CardTitle,
   CardContent,
   Separator,
+  Skeleton,
 } from "@delivio/ui";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCartStore } from "@/stores/cart-store";
 
 export default function AccountPage() {
   const router = useRouter();
-  const { customer, isAuthenticated, logout } = useAuthStore();
+  const { customer, isAuthenticated, isLoading, logout } = useAuthStore();
   const clearCart = useCartStore((s) => s.clear);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   async function handleLogout() {
     await logout();
@@ -26,18 +34,15 @@ export default function AccountPage() {
     router.push("/login");
   }
 
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
-      <div className="mx-auto max-w-md px-4 pt-12 text-center">
-        <User className="mx-auto mb-4 size-12 text-muted-foreground" />
-        <h2 className="mb-2 text-xl font-semibold">Sign in to your account</h2>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Track orders, save addresses, and more
-        </p>
-        <Button onClick={() => router.push("/login")}>Sign in</Button>
+      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
+        <Skeleton className="h-8 w-1/3" />
+        <Skeleton className="h-32 w-full rounded-lg" />
       </div>
     );
   }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="mx-auto max-w-md px-4 pt-6">

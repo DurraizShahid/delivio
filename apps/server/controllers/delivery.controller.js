@@ -58,6 +58,9 @@ async function updateDeliveryStatus(req, res, next) {
 
     const delivery = await deliveryModel.findById(id);
     if (!delivery) return next(createError('Delivery not found', 404));
+    if (req.user?.role === 'rider' && delivery.rider_id && delivery.rider_id !== req.user.id) {
+      return next(createError('Access denied', 403));
+    }
 
     const updated = await deliveryModel.updateStatus(id, status);
 
@@ -80,12 +83,20 @@ async function updateLocation(req, res, next) {
     const { lat, lon, heading, speed } = req.body;
     const riderId = req.user.id;
 
+    const delivery = await deliveryModel.findById(id);
+    if (!delivery) return next(createError('Delivery not found', 404));
+    if (req.user?.role === 'rider' && delivery.rider_id && delivery.rider_id !== riderId) {
+      return next(createError('Access denied', 403));
+    }
+
     const allowed = await sessionService.checkLocationRateLimit(id);
     if (!allowed) {
       return res.status(429).json({ error: 'Location updates too frequent. Max 1 per 3 seconds.' });
     }
 
     await sessionService.cacheRiderLocation(id, { lat, lon, heading, speed, updatedAt: new Date().toISOString() });
+    // Also update rider availability location so matching works even outside dispatch UI
+    await sessionService.cacheRiderAvailability(req.projectRef, riderId, { lat, lon, heading: heading || null, speed: speed || null, updatedAt: new Date().toISOString() });
 
     wsServer.broadcast(req.projectRef, {
       type: 'delivery:location_update',
@@ -96,6 +107,23 @@ async function updateLocation(req, res, next) {
       speed: speed || null,
     });
 
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateRiderAvailability(req, res, next) {
+  try {
+    const { lat, lon, heading, speed } = req.body;
+    const riderId = req.user.id;
+    await sessionService.cacheRiderAvailability(req.projectRef, riderId, {
+      lat,
+      lon,
+      heading: heading || null,
+      speed: speed || null,
+      updatedAt: new Date().toISOString(),
+    });
     return res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -121,6 +149,9 @@ async function riderArrived(req, res, next) {
 
     const delivery = await deliveryModel.findById(id);
     if (!delivery) return next(createError('Delivery not found', 404));
+    if (req.user?.role === 'rider' && delivery.rider_id && delivery.rider_id !== req.user.id) {
+      return next(createError('Access denied', 403));
+    }
 
     const updated = await deliveryModel.updateStatus(id, 'arrived');
 
@@ -273,6 +304,7 @@ module.exports = {
   updateDeliveryStatus,
   updateLocation,
   getLocation,
+  updateRiderAvailability,
   riderArrived,
   assignRider,
   reassignDelivery,

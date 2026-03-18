@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -18,8 +18,15 @@ import { useAuthStore } from "@/stores/auth-store";
 
 export default function VendorLoginPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, isLoading, router]);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 

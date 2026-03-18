@@ -12,6 +12,7 @@ jest.mock('../services/session.service', () => ({
   getCustomerSession: jest.fn().mockResolvedValue(null),
   checkLocationRateLimit: jest.fn().mockResolvedValue(true),
   cacheRiderLocation: jest.fn().mockResolvedValue(undefined),
+  cacheRiderAvailability: jest.fn().mockResolvedValue(undefined),
   getRiderLocation: jest.fn().mockResolvedValue(null),
 }));
 jest.mock('../services/notification.service', () => ({
@@ -104,6 +105,7 @@ describe('POST /api/deliveries/:id/location', () => {
 
   it('caches location and broadcasts WS event', async () => {
     sessionService.getAdminSession.mockResolvedValue(RIDER_SESSION);
+    db.select.mockResolvedValueOnce([makeDelivery({ id: 'delivery-001', rider_id: IDS.USER })]);
     const res = await request(app).post('/api/deliveries/delivery-001/location')
       .set('Cookie', ADMIN_COOKIE).send({ lat: 51.5074, lon: -0.1278, heading: 90, speed: 15.5 });
     expect(res.status).toBe(200);
@@ -116,6 +118,7 @@ describe('POST /api/deliveries/:id/location', () => {
   it('returns 429 when too frequent', async () => {
     sessionService.getAdminSession.mockResolvedValue(RIDER_SESSION);
     sessionService.checkLocationRateLimit.mockResolvedValue(false);
+    db.select.mockResolvedValueOnce([makeDelivery({ id: 'delivery-001', rider_id: IDS.USER })]);
     const res = await request(app).post('/api/deliveries/delivery-001/location')
       .set('Cookie', ADMIN_COOKIE).send({ lat: 51.5074, lon: -0.1278 });
     expect(res.status).toBe(429);
