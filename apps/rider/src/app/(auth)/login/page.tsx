@@ -51,54 +51,103 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Delivio Rider</CardTitle>
-          <CardDescription>
-            Sign in to manage your deliveries
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="email"
-                placeholder="rider@delivio.app"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                required
-                autoFocus
-              />
+    <div className="relative min-h-screen bg-background">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.08] via-background to-background" />
+        <div className="absolute left-1/2 top-0 h-64 w-[640px] -translate-x-1/2 rounded-full bg-primary/[0.08] blur-3xl" />
+      </div>
+
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
+        <div className="mb-6 flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <span className="text-base font-bold">D</span>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
-                required
-              />
+            <div className="leading-tight">
+              <div className="text-lg font-semibold tracking-tight">
+                Delivio Rider
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Deliveries & earnings
+              </div>
             </div>
-            <Button
-              className="w-full"
-              disabled={loading || !email || !password}
-            >
-              {loading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <>
-                  Sign in <ArrowRight className="size-4" />
-                </>
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl tracking-tight">Sign in</CardTitle>
+            <CardDescription>
+              Use your rider account credentials.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="rider-email">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="rider-email"
+                    type="email"
+                    placeholder="rider@delivio.app"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    required
+                    autoFocus
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium"
+                  htmlFor="rider-password"
+                >
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="rider-password"
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    required
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gap-2"
+                disabled={loading || !email || !password}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Signing in…
+                  </>
+                ) : (
+                  <>
+                    Sign in <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

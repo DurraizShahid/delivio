@@ -245,7 +245,9 @@ export function createApiClient(baseUrl: string): ApiClient {
         if (params?.limit) qs.set("limit", String(params.limit));
         if (params?.offset) qs.set("offset", String(params.offset));
         const q = qs.toString();
-        return get(`/api/orders${q ? `?${q}` : ""}`);
+        return get<{ orders: Order[] }>(`/api/orders${q ? `?${q}` : ""}`).then(
+          (r) => r.orders
+        );
       },
       get: (id) => get(`/api/orders/${id}`),
       updateStatus: (id, status) =>

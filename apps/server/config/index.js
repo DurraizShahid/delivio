@@ -28,6 +28,9 @@ const config = {
 
   supabase: {
     url: optional('SUPABASE_URL', ''),
+    // NOTE: service role key is required for server-side DB access (bypasses RLS).
+    // We keep SUPABASE_SERVICE_KEY for backward compatibility, but prefer SUPABASE_SERVICE_ROLE_KEY.
+    serviceRoleKey: optional('SUPABASE_SERVICE_ROLE_KEY', ''),
     serviceKey: optional('SUPABASE_SERVICE_KEY', ''),
     accessToken: optional('SUPABASE_ACCESS_TOKEN', ''),
   },

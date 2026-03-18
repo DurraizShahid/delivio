@@ -4,8 +4,16 @@ const config = require('../config');
 const logger = require('./logger');
 
 const BASE_URL = config.supabase.url;
-const SERVICE_KEY = config.supabase.serviceKey;
+const SERVICE_KEY = config.supabase.serviceRoleKey || config.supabase.serviceKey;
 const ACCESS_TOKEN = config.supabase.accessToken;
+const SERVICE_KEY_KIND =
+  typeof SERVICE_KEY === 'string' && SERVICE_KEY.startsWith('sb_publishable_')
+    ? 'publishable'
+    : typeof SERVICE_KEY === 'string' && SERVICE_KEY.startsWith('sb_secret_')
+      ? 'secret'
+      : typeof SERVICE_KEY === 'string' && SERVICE_KEY.length
+        ? 'other'
+        : 'missing';
 
 /**
  * Core Supabase REST API fetch helper.
@@ -87,7 +95,8 @@ function buildFilters(filters = {}) {
     .map(([key, value]) => {
       if (value === null) return `${key}=is.null`;
       if (Array.isArray(value)) return `${key}=in.(${value.join(',')})`;
-      return `${key}=eq.${encodeURIComponent(value)}`;
+      // URLSearchParams will encode values; avoid double-encoding here.
+      return `${key}=eq.${value}`;
     })
     .join('&');
 }

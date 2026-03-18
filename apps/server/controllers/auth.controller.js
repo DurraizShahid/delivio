@@ -28,7 +28,9 @@ async function login(req, res, next) {
     const { email, password } = req.body;
     const user = await userModel.findByEmail(email);
 
-    if (!user || !(await userModel.verifyPassword(user, password))) {
+    const passwordOk = user ? await userModel.verifyPassword(user, password) : false;
+
+    if (!user || !passwordOk) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
