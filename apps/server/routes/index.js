@@ -1,19 +1,23 @@
 'use strict';
 
 const { Router } = require('express');
-const { parseSession } = require('../middleware/auth.middleware');
-const { attachProjectRef } = require('../middleware/project-ref.middleware');
+const { parseSession, requireAnyAuth, requireAdmin } = require('../middleware/auth.middleware');
+const { attachProjectRef, requireProjectRef } = require('../middleware/project-ref.middleware');
 const { globalLimiter } = require('../middleware/rate-limit.middleware');
 
-const authRoutes       = require('./auth.routes');
-const orderRoutes      = require('./order.routes');
-const cartRoutes       = require('./cart.routes');
-const deliveryRoutes   = require('./delivery.routes');
-const paymentRoutes    = require('./payment.routes');
-const chatRoutes       = require('./chat.routes');
-const pushRoutes       = require('./push.routes');
-const workspaceRoutes  = require('./workspace.routes');
-const publicRoutes     = require('./public.routes');
+const authRoutes            = require('./auth.routes');
+const orderRoutes           = require('./order.routes');
+const cartRoutes            = require('./cart.routes');
+const deliveryRoutes        = require('./delivery.routes');
+const paymentRoutes         = require('./payment.routes');
+const chatRoutes            = require('./chat.routes');
+const pushRoutes            = require('./push.routes');
+const workspaceRoutes       = require('./workspace.routes');
+const publicRoutes          = require('./public.routes');
+const ratingRoutes          = require('./rating.routes');
+const tipRoutes             = require('./tip.routes');
+const vendorSettingsRoutes  = require('./vendor-settings.routes');
+const adminSettingsRoutes   = require('./admin-settings.routes');
 
 const router = Router();
 
@@ -32,6 +36,12 @@ router.use('/deliveries',  deliveryRoutes);
 router.use('/chat',        chatRoutes);
 router.use('/push',        pushRoutes);
 router.use('/workspace',   workspaceRoutes);
+
+// Ratings, tips, vendor settings
+router.use('/ratings',          requireAnyAuth, ratingRoutes);
+router.use('/tips',             requireAnyAuth, tipRoutes);
+router.use('/vendor-settings',  attachProjectRef, requireProjectRef, requireAdmin, vendorSettingsRoutes);
+router.use('/admin-settings',  requireAdmin, adminSettingsRoutes);
 
 // Payment routes (webhook uses raw body — must be mounted separately)
 router.use('/', paymentRoutes);

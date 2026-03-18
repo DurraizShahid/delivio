@@ -10,8 +10,12 @@ const { createError } = require('../middleware/error.middleware');
 async function listDeliveries(req, res, next) {
   try {
     const riderId = req.user.id;
-    const { zoneId } = req.query;
-    const deliveries = await deliveryModel.findForRider(riderId, zoneId);
+    const { zoneId, status } = req.query;
+    if (status === 'pending') {
+      const deliveries = await deliveryModel.findAvailable(req.projectRef);
+      return res.json({ deliveries: deliveries || [] });
+    }
+    const deliveries = await deliveryModel.findForRider(riderId, zoneId, status);
     return res.json({ deliveries });
   } catch (err) {
     next(err);
@@ -30,6 +34,7 @@ async function claimDelivery(req, res, next) {
     const claimed = await deliveryModel.claim(id, riderId);
     if (!claimed) return next(createError('Could not claim delivery (race condition)', 409));
 
+    await deliveryModel.updateStatus(id, 'assigned');
     await notificationService.notifyDeliveryAssigned(delivery, riderId, req.projectRef);
 
     await writeAuditLog({
@@ -108,4 +113,168 @@ async function getLocation(req, res, next) {
   }
 }
 
-module.exports = { listDeliveries, claimDelivery, updateDeliveryStatus, updateLocation, getLocation };
+// ─── Rider Arrived ───────────────────────────────────────────────────────────
+
+async function riderArrived(req, res, next) {
+  try {
+    const { id } = req.params;
+
+    const delivery = await deliveryModel.findById(id);
+    if (!delivery) return next(createError('Delivery not found', 404));
+
+    const updated = await deliveryModel.updateStatus(id, 'arrived');
+
+    wsServer.broadcast(req.projectRef, {
+      type: 'delivery:rider_arrived',
+      deliveryId: id,
+      orderId: delivery.order_id,
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (delivery.order_id) {
+      await notificationService.notifyRiderArrived(delivery, delivery.order_id, req.projectRef);
+    }
+
+    await writeAuditLog({
+      userId: req.user?.id,
+      action: 'delivery.rider_arrived',
+      resourceType: 'delivery',
+      resourceId: id,
+      ip: req.ip,
+    });
+
+    return res.json({ delivery: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Assign Rider ────────────────────────────────────────────────────────────
+
+async function assignRider(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { riderId } = req.body;
+
+    const delivery = await deliveryModel.findById(id);
+    if (!delivery) return next(createError('Delivery not found', 404));
+
+    const claimed = await deliveryModel.claim(id, riderId);
+    if (!claimed) return next(createError('Could not assign rider', 409));
+
+    await deliveryModel.updateStatus(id, 'assigned');
+    await notificationService.notifyDeliveryAssigned(delivery, riderId, req.projectRef);
+
+    wsServer.broadcast(req.projectRef, {
+      type: 'delivery:rider_assigned',
+      deliveryId: id,
+      riderId,
+      orderId: delivery.order_id,
+      updatedAt: new Date().toISOString(),
+    });
+
+    await writeAuditLog({
+      userId: req.user?.id,
+      action: 'delivery.rider_assigned',
+      resourceType: 'delivery',
+      resourceId: id,
+      details: { riderId },
+      ip: req.ip,
+    });
+
+    return res.json({ delivery: claimed });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Reassign Delivery ──────────────────────────────────────────────────────
+
+async function reassignDelivery(req, res, next) {
+  try {
+    const { id } = req.params;
+    const delivery = await deliveryModel.findById(id);
+    if (!delivery) return next(createError('Delivery not found', 404));
+
+    await deliveryModel.reassign(id);
+
+    wsServer.broadcast(req.projectRef, {
+      type: 'delivery:request',
+      deliveryId: id,
+      orderId: delivery.order_id,
+      createdAt: new Date().toISOString(),
+    });
+
+    const order = await require('../models/order.model').findById(delivery.order_id);
+    if (order?.customer_id) {
+      await notificationService.notifyOrderStatusChange(
+        order, order.customer_id, 'Your delivery is being reassigned to a new rider'
+      );
+    }
+
+    await writeAuditLog({
+      userId: req.user?.id || 'system',
+      action: 'delivery.reassigned',
+      resourceType: 'delivery',
+      resourceId: id,
+      ip: req.ip,
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Assign External Rider ──────────────────────────────────────────────────
+
+async function assignExternalRider(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, phone } = req.body;
+
+    const delivery = await deliveryModel.findById(id);
+    if (!delivery) return next(createError('Delivery not found', 404));
+
+    const { update } = require('../lib/supabase');
+    await update('deliveries', {
+      external_rider_name: name,
+      external_rider_phone: phone,
+      is_external: true,
+      status: 'assigned',
+      updated_at: new Date().toISOString(),
+    }, { id });
+
+    const orderModel = require('../models/order.model');
+    const order = await orderModel.findById(delivery.order_id);
+    if (order?.customer_id) {
+      await notificationService.notifyOrderStatusChange(
+        order, order.customer_id, `A rider (${name}) has been assigned. Contact: ${phone}`
+      );
+    }
+
+    wsServer.broadcast(req.projectRef, {
+      type: 'order:status_changed',
+      orderId: delivery.order_id,
+      status: 'assigned',
+      deliveryStatus: 'assigned',
+      updatedAt: new Date().toISOString(),
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  listDeliveries,
+  claimDelivery,
+  updateDeliveryStatus,
+  updateLocation,
+  getLocation,
+  riderArrived,
+  assignRider,
+  reassignDelivery,
+  assignExternalRider,
+};

@@ -16,12 +16,15 @@ import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 import type { Order, OrderStatus } from "@delivio/types";
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
-  pending: { label: "Pending", color: colors.warning },
-  accepted_by_vendor: { label: "Accepted", color: "#3B82F6" },
-  preparing: { label: "Preparing", color: "#8B5CF6" },
-  ready: { label: "Ready", color: "#06B6D4" },
+  placed: { label: "Placed", color: colors.mutedForeground },
+  accepted: { label: "Accepted", color: "#3B82F6" },
+  rejected: { label: "Rejected", color: colors.destructive },
+  preparing: { label: "Preparing", color: "#F97316" },
+  ready: { label: "Ready", color: "#F97316" },
+  assigned: { label: "Assigned", color: "#3B82F6" },
   picked_up: { label: "Picked Up", color: "#3B82F6" },
-  delivered: { label: "Delivered", color: colors.success },
+  arrived: { label: "Arrived", color: colors.success },
+  completed: { label: "Completed", color: colors.success },
   cancelled: { label: "Cancelled", color: colors.destructive },
   scheduled: { label: "Scheduled", color: colors.mutedForeground },
 };
@@ -37,7 +40,7 @@ function formatDate(iso: string) {
 }
 
 function formatPrice(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
+  return `£${(cents / 100).toFixed(2)}`;
 }
 
 export default function OrdersScreen() {

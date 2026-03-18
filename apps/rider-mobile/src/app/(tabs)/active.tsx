@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,11 +17,19 @@ import * as Location from "expo-location";
 import type { Delivery, DeliveryStatus } from "@delivio/types";
 import { api } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { normalizeDelivery } from "@/lib/delivery-utils";
 
-const STATUS_STEPS: DeliveryStatus[] = ["assigned", "picked_up", "delivered"];
+const STATUS_STEPS: DeliveryStatus[] = [
+  "assigned",
+  "picked_up",
+  "arrived",
+  "delivered",
+];
 const STATUS_LABELS: Record<DeliveryStatus, string> = {
+  pending: "Pending",
   assigned: "Assigned",
   picked_up: "Picked Up",
+  arrived: "Arrived",
   delivered: "Delivered",
 };
 
@@ -29,14 +39,22 @@ export default function ActiveScreen() {
   const locationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
 
-  const { data: deliveries, isLoading } = useQuery<Delivery[]>({
+  const { data: res, isLoading } = useQuery({
     queryKey: ["deliveries", "active"],
-    queryFn: () => api.deliveries.list({ status: "assigned" }),
+    queryFn: async () => {
+      const r = await api.deliveries.list({ status: "assigned" });
+      const arr = (r as { deliveries?: unknown[] })?.deliveries ?? (Array.isArray(r) ? r : []);
+      return arr.map((d) => normalizeDelivery(d));
+    },
     refetchInterval: 10000,
   });
+  const deliveries = res ?? [];
 
-  const active = deliveries?.find(
-    (d) => d.status === "assigned" || d.status === "picked_up",
+  const active = deliveries.find(
+    (d) =>
+      d.status === "assigned" ||
+      d.status === "picked_up" ||
+      d.status === "arrived",
   );
 
   const statusMutation = useMutation({
@@ -48,6 +66,27 @@ export default function ActiveScreen() {
     },
     onError: (err: any) =>
       Alert.alert("Error", err.message || "Could not update status."),
+  });
+
+  const arrivedMutation = useMutation({
+    mutationFn: (id: string) => api.deliveries.arrived(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      Alert.alert("Updated", "You have arrived.");
+    },
+    onError: (err: any) =>
+      Alert.alert("Error", err.message || "Could not update status."),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: (orderId: string) => api.orders.complete(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      Alert.alert("Delivered!", "Order completed successfully.");
+      router.push("/(tabs)/history");
+    },
+    onError: (err: any) =>
+      Alert.alert("Error", err.message || "Could not complete delivery."),
   });
 
   useEffect(() => {
@@ -86,6 +125,68 @@ export default function ActiveScreen() {
     return idx < STATUS_STEPS.length - 1 ? STATUS_STEPS[idx + 1] : null;
   };
 
+  const getActionButton = () => {
+    if (!active) return null;
+    if (active.status === "assigned") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            statusMutation.isPending && styles.actionButtonDisabled,
+          ]}
+          onPress={() => statusMutation.mutate({ id: active.id, status: "picked_up" })}
+          disabled={statusMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {statusMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Picked Up</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    if (active.status === "picked_up") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            arrivedMutation.isPending && styles.actionButtonDisabled,
+          ]}
+          onPress={() => arrivedMutation.mutate(active.id)}
+          disabled={arrivedMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {arrivedMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Arrived Outside</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    if (active.status === "arrived") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            completeMutation.isPending && styles.actionButtonDisabled,
+          ]}
+          onPress={() => completeMutation.mutate(active.orderId)}
+          disabled={completeMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {completeMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Complete Delivery</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    return null;
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
@@ -109,8 +210,6 @@ export default function ActiveScreen() {
       </SafeAreaView>
     );
   }
-
-  const nextStatus = getNextStatus(active.status);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -167,28 +266,11 @@ export default function ActiveScreen() {
           )}
         </View>
 
+        {/* Addresses */}
+        <AddressesSection orderId={active.orderId} deliveryStatus={active.status} />
+
         {/* Action buttons */}
-        {nextStatus && (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              statusMutation.isPending && styles.actionButtonDisabled,
-            ]}
-            onPress={() =>
-              statusMutation.mutate({ id: active.id, status: nextStatus })
-            }
-            disabled={statusMutation.isPending}
-            activeOpacity={0.8}
-          >
-            {statusMutation.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
-            ) : (
-              <Text style={styles.actionButtonText}>
-                Mark as {STATUS_LABELS[nextStatus]}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
+        {getActionButton()}
 
         <TouchableOpacity
           style={styles.detailButton}
@@ -207,6 +289,81 @@ function Row({ label, value }: { label: string; value: string }) {
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value}</Text>
+    </View>
+  );
+}
+
+function openMapsWithAddress(address: string) {
+  const encoded = encodeURIComponent(address);
+  const url = Platform.select({
+    ios: `https://maps.apple.com/?daddr=${encoded}&dirflg=d`,
+    android: `https://www.google.com/maps/dir/?api=1&destination=${encoded}`,
+  });
+  Linking.openURL(url || "");
+}
+
+function AddressesSection({ orderId, deliveryStatus }: { orderId: string; deliveryStatus?: string }) {
+  const { data: orderRes } = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: async () => {
+      const r = await api.orders.get(orderId);
+      return (r as { order?: Record<string, unknown> })?.order ?? r;
+    },
+    enabled: !!orderId,
+  });
+  const order = orderRes as {
+    projectRef?: string;
+    project_ref?: string;
+    deliveryAddress?: string;
+    delivery_address?: string;
+    vendorAddress?: string;
+    vendor_address?: string;
+  } | undefined;
+  const projectRef = order?.projectRef ?? order?.project_ref;
+
+  const { data: workspace } = useQuery({
+    queryKey: ["workspace", projectRef],
+    queryFn: () => api.public.workspace(projectRef!),
+    enabled: !!projectRef,
+  });
+
+  const restaurantAddr =
+    workspace?.address ??
+    (order?.vendorAddress ?? order?.vendor_address) ??
+    "Restaurant address";
+  const customerAddr =
+    (order?.deliveryAddress ?? order?.delivery_address) ??
+    "Customer delivery address";
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Addresses</Text>
+      <View style={styles.addressBlock}>
+        <Text style={styles.addressLabel}>Restaurant</Text>
+        <Text style={styles.addressValue}>{restaurantAddr}</Text>
+      </View>
+      {deliveryStatus === "assigned" && (
+        <TouchableOpacity
+          style={styles.navigateButton}
+          onPress={() => openMapsWithAddress(restaurantAddr)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.navigateButtonText}>Navigate to Pickup</Text>
+        </TouchableOpacity>
+      )}
+      <View style={styles.addressBlock}>
+        <Text style={styles.addressLabel}>Customer</Text>
+        <Text style={styles.addressValue}>{customerAddr}</Text>
+      </View>
+      {deliveryStatus === "picked_up" && (
+        <TouchableOpacity
+          style={styles.navigateButton}
+          onPress={() => openMapsWithAddress(customerAddr)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.navigateButtonText}>Navigate to Customer</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -288,6 +445,15 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: fontSize.sm, color: colors.mutedForeground },
   rowValue: { fontSize: fontSize.sm, fontWeight: "500", color: colors.foreground },
 
+  addressBlock: { marginBottom: spacing.md },
+  addressLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+  },
+  addressValue: { fontSize: fontSize.sm, color: colors.mutedForeground },
+
   actionButton: {
     backgroundColor: colors.success,
     borderRadius: borderRadius.md,
@@ -310,6 +476,18 @@ const styles = StyleSheet.create({
   },
   detailButtonText: {
     color: colors.foreground,
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+  },
+  navigateButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  navigateButtonText: {
+    color: "#FFFFFF",
     fontSize: fontSize.sm,
     fontWeight: "600",
   },

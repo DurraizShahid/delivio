@@ -13,16 +13,21 @@ import { useQuery } from "@tanstack/react-query";
 import type { Delivery, DeliveryStatus } from "@delivio/types";
 import { api } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { normalizeDelivery } from "@/lib/delivery-utils";
 
 const STATUS_COLORS: Record<DeliveryStatus, string> = {
+  pending: colors.mutedForeground,
   assigned: colors.warning,
   picked_up: colors.primary,
+  arrived: colors.primary,
   delivered: colors.success,
 };
 
 const STATUS_LABELS: Record<DeliveryStatus, string> = {
+  pending: "Pending",
   assigned: "Assigned",
   picked_up: "Picked Up",
+  arrived: "Arrived",
   delivered: "Delivered",
 };
 
@@ -30,13 +35,18 @@ export default function HistoryScreen() {
   const router = useRouter();
 
   const {
-    data: deliveries,
+    data: res,
     isLoading,
     refetch,
-  } = useQuery<Delivery[]>({
+  } = useQuery({
     queryKey: ["deliveries", "history"],
-    queryFn: () => api.deliveries.list({ status: "delivered" }),
+    queryFn: async () => {
+      const r = await api.deliveries.list({ status: "delivered" });
+      const arr = (r as { deliveries?: unknown[] })?.deliveries ?? (Array.isArray(r) ? r : []);
+      return arr.map((d) => normalizeDelivery(d));
+    },
   });
+  const deliveries = res ?? [];
 
   const renderItem = useCallback(
     ({ item }: { item: Delivery }) => (

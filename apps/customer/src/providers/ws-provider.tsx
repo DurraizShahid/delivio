@@ -30,6 +30,12 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
       client.subscribe("order:status_changed", () => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
       }),
+      client.subscribe("order:rejected", () => {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      }),
+      client.subscribe("order:delayed", () => {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+      }),
       client.subscribe("chat:message", () => {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }),

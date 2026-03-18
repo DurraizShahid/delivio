@@ -38,16 +38,25 @@ export interface CustomerAddress {
 // ─── Orders ────────────────────────────────────────────────────────────────────
 
 export type OrderStatus =
-  | "pending"
-  | "accepted_by_vendor"
+  | "placed"
+  | "accepted"
+  | "rejected"
   | "preparing"
   | "ready"
+  | "assigned"
   | "picked_up"
-  | "delivered"
+  | "arrived"
+  | "completed"
   | "cancelled"
   | "scheduled";
 
 export type PaymentStatus = "pending" | "succeeded" | "failed" | "refunded";
+
+export interface OrderDelivery {
+  id: string;
+  riderId?: string | null;
+  status: DeliveryStatus;
+}
 
 export interface Order {
   id: string;
@@ -62,9 +71,16 @@ export interface Order {
   cancellationReason?: string;
   cancelledBy?: string;
   scheduledFor?: string;
+  prepTimeMinutes?: number;
+  slaDeadline?: string;
+  slaBreached?: boolean;
+  deliveryMode?: DeliveryMode;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
   items?: OrderItem[];
+  delivery?: OrderDelivery;
+  vendorId?: string;
 }
 
 export interface OrderItem {
@@ -97,7 +113,7 @@ export interface CartItem {
 
 // ─── Delivery ──────────────────────────────────────────────────────────────────
 
-export type DeliveryStatus = "assigned" | "picked_up" | "delivered";
+export type DeliveryStatus = "pending" | "assigned" | "picked_up" | "arrived" | "delivered";
 
 export interface Delivery {
   id: string;
@@ -107,8 +123,18 @@ export interface Delivery {
   zoneId?: string;
   etaMinutes?: number;
   claimedAt?: string;
+  externalRiderName?: string;
+  externalRiderPhone?: string;
+  isExternal?: boolean;
   updatedAt: string;
   createdAt: string;
+}
+
+export interface DeliveryCheck {
+  deliverable: boolean;
+  distance: number | null;
+  maxRadius: number;
+  note?: string;
 }
 
 export interface RiderLocation {
@@ -120,6 +146,39 @@ export interface RiderLocation {
   heading?: number;
   speed?: number;
   recordedAt: string;
+}
+
+export interface Rating {
+  id: string;
+  orderId: string;
+  fromUserId: string;
+  toUserId: string;
+  toRole: "vendor" | "rider";
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
+export interface Tip {
+  id: string;
+  orderId: string;
+  fromCustomerId: string;
+  toRiderId: string;
+  amountCents: number;
+  createdAt: string;
+}
+
+export type DeliveryMode = "third_party" | "vendor_rider";
+
+export interface VendorSettings {
+  id: string;
+  projectRef: string;
+  autoAccept: boolean;
+  defaultPrepTimeMinutes: number;
+  deliveryMode: DeliveryMode;
+  deliveryRadiusKm: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Chat ──────────────────────────────────────────────────────────────────────
@@ -207,6 +266,18 @@ export interface WSOrderStatusChanged {
   deliveryStatus?: DeliveryStatus;
 }
 
+export interface WSOrderRejected {
+  type: "order:rejected";
+  orderId: string;
+  reason?: string;
+}
+
+export interface WSOrderDelayed {
+  type: "order:delayed";
+  orderId: string;
+  slaDeadline: string;
+}
+
 export interface WSDeliveryLocationUpdate {
   type: "delivery:location_update";
   deliveryId: string;
@@ -214,6 +285,20 @@ export interface WSDeliveryLocationUpdate {
   lon: number;
   heading?: number;
   speed?: number;
+}
+
+export interface WSDeliveryRequest {
+  type: "delivery:request";
+  deliveryId: string;
+  orderId: string;
+  vendorLat?: number;
+  vendorLon?: number;
+}
+
+export interface WSDeliveryRiderArrived {
+  type: "delivery:rider_arrived";
+  deliveryId: string;
+  orderId: string;
 }
 
 export interface WSChatMessage {
@@ -238,7 +323,11 @@ export interface WSChatTyping {
 
 export type WSEvent =
   | WSOrderStatusChanged
+  | WSOrderRejected
+  | WSOrderDelayed
   | WSDeliveryLocationUpdate
+  | WSDeliveryRequest
+  | WSDeliveryRiderArrived
   | WSChatMessage
   | WSChatRead
   | WSChatTyping;

@@ -71,9 +71,9 @@ export default function ConversationScreen() {
   useEffect(() => {
     if (!conversationId) return;
     wsClient.connect();
-    const unsub = wsClient.subscribe("chat_message", (event: WSEvent) => {
+    const unsub = wsClient.subscribe("chat:message", (event: WSEvent) => {
       if (
-        event.type === "chat_message" &&
+        event.type === "chat:message" &&
         event.message.conversationId === conversationId
       ) {
         queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });

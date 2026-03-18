@@ -19,5 +19,9 @@ router.post('/:id/claim',                                                    del
 router.post('/:id/status',        validate(v.updateDeliveryStatusSchema),    deliveryController.updateDeliveryStatus);
 router.post('/:id/location',      validate(v.locationUpdateSchema),          deliveryController.updateLocation);
 router.get('/:id/location',                                                  deliveryController.getLocation);
+router.post('/:id/arrived',                                                  deliveryController.riderArrived);
+router.post('/:id/assign',                                                   deliveryController.assignRider);
+router.post('/:id/reassign',                                                 deliveryController.reassignDelivery);
+router.post('/:id/assign-external', validate(v.assignExternalSchema),        deliveryController.assignExternalRider);
 
 module.exports = router;

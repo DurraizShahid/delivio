@@ -6,6 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,11 +15,19 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Delivery, DeliveryStatus } from "@delivio/types";
 import { api } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { normalizeDelivery } from "@/lib/delivery-utils";
 
-const STATUS_STEPS: DeliveryStatus[] = ["assigned", "picked_up", "delivered"];
+const STATUS_STEPS: DeliveryStatus[] = [
+  "assigned",
+  "picked_up",
+  "arrived",
+  "delivered",
+];
 const STATUS_LABELS: Record<DeliveryStatus, string> = {
+  pending: "Pending",
   assigned: "Assigned",
   picked_up: "Picked Up",
+  arrived: "Arrived",
   delivered: "Delivered",
 };
 
@@ -26,16 +36,28 @@ export default function DeliveryDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: deliveries, isLoading } = useQuery<Delivery[]>({
+  const { data: res, isLoading } = useQuery({
     queryKey: ["deliveries", "detail", id],
-    queryFn: () => api.deliveries.list(),
+    queryFn: async () => {
+      const [mine, pending] = await Promise.all([
+        api.deliveries.list(),
+        api.deliveries.list({ status: "pending" }),
+      ]);
+      const extract = (r: unknown) => {
+        const arr = (r as { deliveries?: unknown[] })?.deliveries ?? (Array.isArray(r) ? r : []);
+        return arr.map((d) => normalizeDelivery(d));
+      };
+      const all = [...extract(mine), ...extract(pending)];
+      return Array.from(new Map(all.map((d) => [d.id, d])).values());
+    },
     enabled: !!id,
   });
-
+  const deliveries = res ?? [];
   const delivery = deliveries?.find((d) => d.id === id);
 
   const statusMutation = useMutation({
-    mutationFn: (status: string) => api.deliveries.updateStatus(id!, status),
+    mutationFn: ({ id: deliveryId, status }: { id: string; status: string }) =>
+      api.deliveries.updateStatus(deliveryId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
       Alert.alert("Updated", "Delivery status updated.");
@@ -44,9 +66,89 @@ export default function DeliveryDetailScreen() {
       Alert.alert("Error", err.message || "Could not update status."),
   });
 
-  const getNextStatus = (current: DeliveryStatus): DeliveryStatus | null => {
-    const idx = STATUS_STEPS.indexOf(current);
-    return idx < STATUS_STEPS.length - 1 ? STATUS_STEPS[idx + 1] : null;
+  const arrivedMutation = useMutation({
+    mutationFn: (deliveryId: string) => api.deliveries.arrived(deliveryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      Alert.alert("Arrived", "Customer notified you have arrived.");
+    },
+    onError: (err: any) =>
+      Alert.alert("Error", err.message || "Could not update status."),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: (orderId: string) => api.orders.complete(orderId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+      Alert.alert("Delivered!", "Order completed successfully.");
+      router.back();
+    },
+    onError: (err: any) =>
+      Alert.alert("Error", err.message || "Could not complete delivery."),
+  });
+
+  const getActionButton = () => {
+    if (!delivery) return null;
+    if (delivery.status === "assigned") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            statusMutation.isPending && styles.disabled,
+          ]}
+          onPress={() =>
+            statusMutation.mutate({ id: delivery.id, status: "picked_up" })
+          }
+          disabled={statusMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {statusMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Picked Up</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    if (delivery.status === "picked_up") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            arrivedMutation.isPending && styles.disabled,
+          ]}
+          onPress={() => arrivedMutation.mutate(delivery.id)}
+          disabled={arrivedMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {arrivedMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Arrived Outside</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    if (delivery.status === "arrived") {
+      return (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            completeMutation.isPending && styles.disabled,
+          ]}
+          onPress={() => completeMutation.mutate(delivery.orderId)}
+          disabled={completeMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {completeMutation.isPending ? (
+            <ActivityIndicator color={colors.primaryForeground} size="small" />
+          ) : (
+            <Text style={styles.actionButtonText}>Complete Delivery</Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
+    return null;
   };
 
   if (isLoading) {
@@ -73,8 +175,6 @@ export default function DeliveryDetailScreen() {
       </SafeAreaView>
     );
   }
-
-  const nextStatus = getNextStatus(delivery.status);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -129,43 +229,11 @@ export default function DeliveryDetailScreen() {
           />
         </View>
 
-        {/* Address placeholders */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Addresses</Text>
-          <View style={styles.addressBlock}>
-            <Text style={styles.addressLabel}>Restaurant</Text>
-            <Text style={styles.addressValue}>
-              Address loaded from order details
-            </Text>
-          </View>
-          <View style={styles.addressBlock}>
-            <Text style={styles.addressLabel}>Customer</Text>
-            <Text style={styles.addressValue}>
-              Address loaded from order details
-            </Text>
-          </View>
-        </View>
+        {/* Addresses */}
+        <AddressesSection orderId={delivery.orderId} deliveryStatus={delivery.status} />
 
         {/* Status action */}
-        {nextStatus && (
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              statusMutation.isPending && styles.disabled,
-            ]}
-            onPress={() => statusMutation.mutate(nextStatus)}
-            disabled={statusMutation.isPending}
-            activeOpacity={0.8}
-          >
-            {statusMutation.isPending ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.actionButtonText}>
-                Mark as {STATUS_LABELS[nextStatus]}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
+        {getActionButton()}
 
         {/* Chat buttons */}
         <View style={styles.chatRow}>
@@ -200,6 +268,81 @@ function Row({ label, value }: { label: string; value: string }) {
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value}</Text>
+    </View>
+  );
+}
+
+function openMapsWithAddress(address: string) {
+  const encoded = encodeURIComponent(address);
+  const url = Platform.select({
+    ios: `https://maps.apple.com/?daddr=${encoded}&dirflg=d`,
+    android: `https://www.google.com/maps/dir/?api=1&destination=${encoded}`,
+  });
+  Linking.openURL(url || "");
+}
+
+function AddressesSection({ orderId, deliveryStatus }: { orderId: string; deliveryStatus?: string }) {
+  const { data: orderRes } = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: async () => {
+      const r = await api.orders.get(orderId);
+      return (r as { order?: Record<string, unknown> })?.order ?? r;
+    },
+    enabled: !!orderId,
+  });
+  const order = orderRes as {
+    projectRef?: string;
+    project_ref?: string;
+    deliveryAddress?: string;
+    delivery_address?: string;
+    vendorAddress?: string;
+    vendor_address?: string;
+  } | undefined;
+  const projectRef = order?.projectRef ?? order?.project_ref;
+
+  const { data: workspace } = useQuery({
+    queryKey: ["workspace", projectRef],
+    queryFn: () => api.public.workspace(projectRef!),
+    enabled: !!projectRef,
+  });
+
+  const restaurantAddr =
+    workspace?.address ??
+    (order?.vendorAddress ?? order?.vendor_address) ??
+    "Restaurant address";
+  const customerAddr =
+    (order?.deliveryAddress ?? order?.delivery_address) ??
+    "Customer delivery address";
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Addresses</Text>
+      <View style={styles.addressBlock}>
+        <Text style={styles.addressLabel}>Restaurant</Text>
+        <Text style={styles.addressValue}>{restaurantAddr}</Text>
+      </View>
+      {deliveryStatus === "assigned" && (
+        <TouchableOpacity
+          style={styles.navigateButton}
+          onPress={() => openMapsWithAddress(restaurantAddr)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.navigateButtonText}>Navigate to Pickup</Text>
+        </TouchableOpacity>
+      )}
+      <View style={styles.addressBlock}>
+        <Text style={styles.addressLabel}>Customer</Text>
+        <Text style={styles.addressValue}>{customerAddr}</Text>
+      </View>
+      {deliveryStatus === "picked_up" && (
+        <TouchableOpacity
+          style={styles.navigateButton}
+          onPress={() => openMapsWithAddress(customerAddr)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.navigateButtonText}>Navigate to Customer</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -278,6 +421,18 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.6 },
   actionButtonText: { color: "#fff", fontSize: fontSize.base, fontWeight: "600" },
 
+  navigateButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  navigateButtonText: {
+    color: "#FFFFFF",
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+  },
   chatRow: { flexDirection: "row", gap: spacing.md },
   chatButton: {
     flex: 1,

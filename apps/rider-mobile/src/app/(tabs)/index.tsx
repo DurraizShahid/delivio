@@ -14,25 +14,32 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Delivery, WSEvent } from "@delivio/types";
 import { api, wsClient } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { normalizeDelivery } from "@/lib/delivery-utils";
 
 export default function AvailableScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const {
-    data: deliveries,
+    data: res,
     isLoading,
     refetch,
-  } = useQuery<Delivery[]>({
+  } = useQuery({
     queryKey: ["deliveries", "available"],
-    queryFn: () => api.deliveries.list({ status: "assigned" }),
+    queryFn: async () => {
+      const r = await api.deliveries.list({ status: "pending" });
+      const arr = (r as { deliveries?: unknown[] })?.deliveries ?? (Array.isArray(r) ? r : []);
+      return arr.map((d) => normalizeDelivery(d));
+    },
   });
+  const deliveries = res ?? [];
 
   const claimMutation = useMutation({
     mutationFn: (id: string) => api.deliveries.claim(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliveries"] });
       Alert.alert("Claimed!", "Delivery assigned to you.");
+      router.replace("/(tabs)/active");
     },
     onError: (err: any) =>
       Alert.alert("Error", err.message || "Could not claim delivery."),
@@ -41,7 +48,7 @@ export default function AvailableScreen() {
   useEffect(() => {
     wsClient.connect();
     const unsub = wsClient.subscribe(
-      "delivery_location_update",
+      "delivery:request",
       (_event: WSEvent) => {
         queryClient.invalidateQueries({ queryKey: ["deliveries", "available"] });
       },

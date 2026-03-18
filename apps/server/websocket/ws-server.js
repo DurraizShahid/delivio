@@ -148,6 +148,16 @@ function handleMessage(ws, data, identity, connectionId) {
 
 /**
  * Broadcast a message to ALL connections in a project workspace.
+ *
+ * Supported event types:
+ *   order:status_changed  — order status transitioned
+ *   order:rejected        — vendor rejected an order
+ *   order:delayed         — SLA deadline breached
+ *   delivery:location_update — rider GPS ping
+ *   delivery:rider_arrived   — rider tapped "arrived"
+ *   delivery:rider_assigned  — rider assigned to delivery
+ *   delivery:request         — new delivery available for riders
+ *   chat:typing              — typing indicator relay
  */
 function broadcast(projectRef, message) {
   const projectConns = registry.get(projectRef);

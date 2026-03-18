@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, CreditCard } from "lucide-react";
+import { ArrowLeft, Loader2, CreditCard, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -17,16 +17,42 @@ import {
 import { useCartStore } from "@/stores/cart-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
+import type { DeliveryCheck } from "@delivio/types";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalCents, clear } = useCartStore();
+  const { items, totalCents, clear, projectRef } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState("");
+  const [deliveryCheck, setDeliveryCheck] = useState<DeliveryCheck | null>(null);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!address.trim() || !projectRef) {
+      setDeliveryCheck(null);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setCheckingDelivery(true);
+      try {
+        const geo = await api.public.geocode(address.trim());
+        const check = await api.public.deliveryCheck(projectRef, geo.lat, geo.lon);
+        setDeliveryCheck(check);
+      } catch {
+        setDeliveryCheck(null);
+      } finally {
+        setCheckingDelivery(false);
+      }
+    }, 800);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [address, projectRef]);
 
   const deliveryFee = 250;
   const total = totalCents() + deliveryFee;
+  const cannotDeliver = deliveryCheck !== null && !deliveryCheck.deliverable;
 
   async function handlePlaceOrder() {
     if (!isAuthenticated) {
@@ -117,11 +143,29 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {checkingDelivery && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Checking delivery availability...
+          </div>
+        )}
+
+        {cannotDeliver && (
+          <Card className="border-destructive/50 bg-destructive/10">
+            <CardContent className="flex items-center gap-3 p-4">
+              <AlertTriangle className="size-4 text-destructive shrink-0" />
+              <p className="text-sm font-medium text-destructive">
+                Sorry, this restaurant doesn&apos;t deliver to your area
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Button
           className="w-full gap-2"
           size="lg"
           onClick={handlePlaceOrder}
-          disabled={loading}
+          disabled={loading || cannotDeliver}
         >
           {loading ? (
             <Loader2 className="size-4 animate-spin" />

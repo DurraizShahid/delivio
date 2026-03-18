@@ -5,11 +5,22 @@ const BaseModel = require('./base.model');
 const { select, insert, update, supabaseFetch } = require('../lib/supabase');
 
 const VALID_STATUSES = [
-  'scheduled', 'pending', 'accepted_by_vendor', 'preparing',
-  'ready', 'picked_up', 'delivered', 'cancelled',
+  'placed', 'accepted', 'rejected', 'preparing', 'ready',
+  'assigned', 'picked_up', 'arrived', 'completed', 'cancelled', 'scheduled',
 ];
 
-const CANCELLABLE_STATUSES = ['pending', 'accepted_by_vendor', 'scheduled'];
+const STATUS_TRANSITIONS = {
+  placed: ['accepted', 'rejected', 'cancelled'],
+  scheduled: ['placed', 'cancelled'],
+  accepted: ['preparing', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
+  ready: ['assigned', 'cancelled'],
+  assigned: ['picked_up', 'cancelled'],
+  picked_up: ['arrived'],
+  arrived: ['completed'],
+};
+
+const CANCELLABLE_STATUSES = ['placed', 'accepted', 'scheduled'];
 
 class OrderModel extends BaseModel {
   constructor() {
@@ -46,7 +57,7 @@ class OrderModel extends BaseModel {
     const orderId = uuidv4();
     const now = new Date().toISOString();
 
-    const status = scheduledFor ? 'scheduled' : 'pending';
+    const status = scheduledFor ? 'scheduled' : 'placed';
 
     const order = await super.create({
       id: orderId,
@@ -57,6 +68,11 @@ class OrderModel extends BaseModel {
       payment_intent_id: paymentIntentId || null,
       total_cents: totalCents,
       scheduled_for: scheduledFor || null,
+      prep_time_minutes: null,
+      sla_deadline: null,
+      sla_breached: false,
+      delivery_mode: null,
+      rejection_reason: null,
       created_at: now,
       updated_at: now,
     });
@@ -74,6 +90,16 @@ class OrderModel extends BaseModel {
     }
 
     return this.findWithItems(orderId);
+  }
+
+  validateTransition(currentStatus, newStatus) {
+    const allowed = STATUS_TRANSITIONS[currentStatus];
+    if (!allowed || !allowed.includes(newStatus)) {
+      throw new Error(
+        `Invalid status transition: ${currentStatus} → ${newStatus}`
+      );
+    }
+    return true;
   }
 
   async updateStatus(orderId, newStatus) {
@@ -100,6 +126,30 @@ class OrderModel extends BaseModel {
       status: 'cancelled',
       cancellation_reason: reason || null,
       cancelled_by: initiator || null,
+      updated_at: new Date().toISOString(),
+    }, { id: orderId });
+  }
+
+  async reject(orderId, reason) {
+    return update(this.table, {
+      status: 'rejected',
+      rejection_reason: reason || null,
+      updated_at: new Date().toISOString(),
+    }, { id: orderId });
+  }
+
+  async setSlaDeadline(orderId, prepTimeMinutes) {
+    const deadline = new Date(Date.now() + prepTimeMinutes * 60_000).toISOString();
+    return update(this.table, {
+      prep_time_minutes: prepTimeMinutes,
+      sla_deadline: deadline,
+      updated_at: new Date().toISOString(),
+    }, { id: orderId });
+  }
+
+  async markSlaBreach(orderId) {
+    return update(this.table, {
+      sla_breached: true,
       updated_at: new Date().toISOString(),
     }, { id: orderId });
   }

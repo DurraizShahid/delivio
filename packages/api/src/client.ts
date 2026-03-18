@@ -3,6 +3,7 @@ import type {
   OrderItem,
   CartItem,
   Delivery,
+  DeliveryCheck,
   RiderLocation,
   Conversation,
   Message,
@@ -12,6 +13,9 @@ import type {
   Workspace,
   PaymentIntentResponse,
   PushPlatform,
+  Rating,
+  Tip,
+  VendorSettings,
 } from "@delivio/types";
 
 async function request<T>(
@@ -67,6 +71,10 @@ export interface ApiClient {
       id: string,
       params?: { amountCents?: number; reason?: string }
     ): Promise<Order>;
+    accept(id: string, prepTimeMinutes?: number): Promise<Order>;
+    reject(id: string, reason?: string): Promise<Order>;
+    complete(id: string): Promise<Order>;
+    extendSla(id: string, additionalMinutes?: number): Promise<{ ok: boolean; newDeadline: string }>;
   };
   cart: {
     get(): Promise<{ session: { id: string }; items: CartItem[] }>;
@@ -92,6 +100,10 @@ export interface ApiClient {
       location: { lat: number; lon: number; heading?: number; speed?: number }
     ): Promise<void>;
     getLocation(id: string): Promise<RiderLocation>;
+    arrived(id: string): Promise<Delivery>;
+    assign(id: string, riderId: string): Promise<Delivery>;
+    reassign(id: string): Promise<{ ok: boolean }>;
+    assignExternal(id: string, params: { name: string; phone: string }): Promise<{ ok: boolean }>;
   };
   chat: {
     createConversation(params: {
@@ -120,6 +132,34 @@ export interface ApiClient {
     register(token: string, platform: PushPlatform): Promise<void>;
     unregister(platform?: PushPlatform): Promise<void>;
   };
+  ratings: {
+    create(params: {
+      orderId: string;
+      toUserId: string;
+      toRole: "vendor" | "rider";
+      rating: number;
+      comment?: string;
+    }): Promise<Rating>;
+    getByOrder(orderId: string): Promise<Rating[]>;
+    getByUser(userId: string): Promise<{ ratings: Rating[]; average: number }>;
+  };
+  tips: {
+    create(params: {
+      orderId: string;
+      toRiderId: string;
+      amountCents: number;
+    }): Promise<Tip>;
+    getByRider(riderId: string): Promise<{ total: number }>;
+  };
+  vendorSettings: {
+    get(): Promise<VendorSettings>;
+    update(settings: Partial<{
+      autoAccept: boolean;
+      defaultPrepTimeMinutes: number;
+      deliveryMode: string;
+      deliveryRadiusKm: number;
+    }>): Promise<VendorSettings>;
+  };
   public: {
     products(
       ref: string,
@@ -127,6 +167,7 @@ export interface ApiClient {
     ): Promise<Product[]>;
     workspace(ref: string): Promise<Workspace>;
     geocode(address: string): Promise<{ lat: number; lon: number }>;
+    deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
   };
 }
 
@@ -177,6 +218,12 @@ export function createApiClient(baseUrl: string): ApiClient {
         patch(`/api/orders/${id}/status`, { status }),
       cancel: (id, params) => post(`/api/orders/${id}/cancel`, params),
       refund: (id, params) => post(`/api/orders/${id}/refund`, params),
+      accept: (id, prepTimeMinutes) =>
+        post(`/api/orders/${id}/accept`, prepTimeMinutes ? { prepTimeMinutes } : {}),
+      reject: (id, reason) =>
+        post(`/api/orders/${id}/reject`, reason ? { reason } : {}),
+      complete: (id) => post(`/api/orders/${id}/complete`),
+      extendSla: (id, additionalMinutes) => post(`/api/orders/${id}/extend-sla`, additionalMinutes ? { additionalMinutes } : {}),
     },
     cart: {
       get: () => get("/api/cart"),
@@ -200,6 +247,10 @@ export function createApiClient(baseUrl: string): ApiClient {
       updateLocation: (id, location) =>
         post(`/api/deliveries/${id}/location`, location),
       getLocation: (id) => get(`/api/deliveries/${id}/location`),
+      arrived: (id) => post(`/api/deliveries/${id}/arrived`),
+      assign: (id, riderId) => post(`/api/deliveries/${id}/assign`, { riderId }),
+      reassign: (id) => post(`/api/deliveries/${id}/reassign`),
+      assignExternal: (id, params) => post(`/api/deliveries/${id}/assign-external`, params),
     },
     chat: {
       createConversation: (params) =>
@@ -225,12 +276,27 @@ export function createApiClient(baseUrl: string): ApiClient {
       unregister: (platform) =>
         del("/api/push/register", platform ? { platform } : undefined),
     },
+    ratings: {
+      create: (params) => post("/api/ratings", params),
+      getByOrder: (orderId) => get(`/api/ratings/order/${orderId}`),
+      getByUser: (userId) => get(`/api/ratings/user/${userId}`),
+    },
+    tips: {
+      create: (params) => post("/api/tips", params),
+      getByRider: (riderId) => get(`/api/tips/rider/${riderId}`),
+    },
+    vendorSettings: {
+      get: () => get("/api/vendor-settings"),
+      update: (settings) => patch("/api/vendor-settings", settings),
+    },
     public: {
       products: (ref, table = "products") =>
         get(`/api/public/${ref}/${table}`),
       workspace: (ref) => get(`/api/workspace/${ref}`),
       geocode: (address) =>
         get(`/api/geocode?address=${encodeURIComponent(address)}`),
+      deliveryCheck: (ref, lat, lon) =>
+        get(`/api/public/${ref}/delivery-check?lat=${lat}&lon=${lon}`),
     },
   };
 }

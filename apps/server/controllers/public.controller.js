@@ -58,4 +58,44 @@ async function geocode(req, res, next) {
   }
 }
 
-module.exports = { healthCheck, publicRead, geocode };
+// ─── Delivery Check (Geo-fence) ─────────────────────────────────────────────
+
+async function deliveryCheck(req, res, next) {
+  try {
+    const { ref } = req.params;
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: 'lat and lon required' });
+    }
+
+    const vendorSettingsModel = require('../models/vendor-settings.model');
+    const settings = await vendorSettingsModel.findByProjectRef(ref);
+    const maxRadius = settings?.delivery_radius_km || 5.0;
+
+    const workspaces = await select('workspaces', { filters: { project_ref: ref } });
+    const workspace = workspaces?.[0];
+
+    if (!workspace?.lat || !workspace?.lon) {
+      return res.json({ deliverable: true, distance: null, maxRadius, note: 'Vendor location not set' });
+    }
+
+    const distance = haversine(lat, lon, workspace.lat, workspace.lon);
+    return res.json({ deliverable: distance <= maxRadius, distance: Math.round(distance * 10) / 10, maxRadius });
+  } catch (err) {
+    next(err);
+  }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+module.exports = { healthCheck, publicRead, geocode, deliveryCheck };

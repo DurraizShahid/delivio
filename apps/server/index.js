@@ -13,6 +13,9 @@ const wsServer = require('./websocket/ws-server');
 const scheduledOrdersJob = require('./jobs/scheduled-orders.job');
 const locationFlushJob   = require('./jobs/location-flush.job');
 const cartCleanupJob     = require('./jobs/cart-cleanup.job');
+const slaCheckJob        = require('./jobs/sla-check.job');
+const autoDispatchJob    = require('./jobs/auto-dispatch.job');
+const radiusExpansionJob = require('./jobs/radius-expansion.job');
 
 // ─── Create HTTP Server ───────────────────────────────────────────────────────
 const server = http.createServer(app);
@@ -36,6 +39,9 @@ server.listen(config.port, () => {
   scheduledOrdersJob.start();
   locationFlushJob.start();
   cartCleanupJob.start();
+  slaCheckJob.start();
+  autoDispatchJob.start();
+  radiusExpansionJob.start();
 });
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────

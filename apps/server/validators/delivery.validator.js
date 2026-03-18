@@ -18,4 +18,9 @@ const listDeliveriesSchema = z.object({
   status: z.string().optional(),
 });
 
-module.exports = { updateDeliveryStatusSchema, locationUpdateSchema, listDeliveriesSchema };
+const assignExternalSchema = z.object({
+  name: z.string().min(1).max(100),
+  phone: z.string().min(5).max(20),
+});
+
+module.exports = { updateDeliveryStatusSchema, locationUpdateSchema, listDeliveriesSchema, assignExternalSchema };

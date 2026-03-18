@@ -17,5 +17,9 @@ router.get('/:id',                                             orderController.g
 router.patch('/:id/status', validate(v.updateStatusSchema),   orderController.updateOrderStatus);
 router.post('/:id/refund',  validate(v.refundSchema),         orderController.refundOrder);
 router.post('/:id/cancel',  validate(v.cancelSchema),         orderController.cancelOrder);
+router.post('/:id/accept',  validate(v.acceptSchema),         orderController.acceptOrder);
+router.post('/:id/reject',  validate(v.rejectSchema),         orderController.rejectOrder);
+router.post('/:id/complete',                                   orderController.completeOrder);
+router.post('/:id/extend-sla', validate(v.extendSlaSchema),    orderController.extendSla);
 
 module.exports = router;

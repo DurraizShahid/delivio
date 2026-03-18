@@ -1,13 +1,35 @@
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
+import { api } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 
 export default function AccountScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+
+  const { data: tipsData } = useQuery({
+    queryKey: ["tips", "rider", user?.id],
+    queryFn: () => api.tips.getByRider(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const { data: ratingsData } = useQuery({
+    queryKey: ["ratings", "user", user?.id],
+    queryFn: () => api.ratings.getByUser(user!.id),
+    enabled: !!user?.id,
+  });
+
+  const totalTipsCents =
+    (tipsData as { totalCents?: number })?.totalCents ??
+    (tipsData as { total?: number })?.total ??
+    0;
+  const totalTipsFormatted = `$${(totalTipsCents / 100).toFixed(2)}`;
+  const avgRating = ratingsData?.average ?? null;
+  const ratingDisplay = avgRating != null ? `${avgRating.toFixed(1)} ★` : "No ratings yet";
 
   const handleLogout = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -39,6 +61,12 @@ export default function AccountScreen() {
             <Text style={styles.roleText}>{user?.role ?? "rider"}</Text>
           </View>
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.earningsTitle}>Earnings</Text>
+        <InfoRow label="Total tips earned" value={totalTipsFormatted} />
+        <InfoRow label="Average rating" value={ratingDisplay} last />
       </View>
 
       <View style={styles.card}>
@@ -139,6 +167,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  earningsTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: "600",
+    color: colors.foreground,
+    marginBottom: spacing.sm,
   },
   row: {
     flexDirection: "row",

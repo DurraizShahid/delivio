@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
 import { useCartStore } from "@/stores/cart-store";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import type { DeliveryCheck } from "@delivio/types";
 
 function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -26,12 +27,38 @@ export default function CheckoutScreen() {
   const items = useCartStore((s) => s.items);
   const totalCents = useCartStore((s) => s.totalCents());
   const clear = useCartStore((s) => s.clear);
+  const projectRef = useCartStore((s) => s.projectRef);
 
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deliveryCheck, setDeliveryCheck] = useState<DeliveryCheck | null>(null);
+  const [checkingDelivery, setCheckingDelivery] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!address.trim() || !projectRef) {
+      setDeliveryCheck(null);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setCheckingDelivery(true);
+      try {
+        const geo = await api.public.geocode(address.trim());
+        const check = await api.public.deliveryCheck(projectRef, geo.lat, geo.lon);
+        setDeliveryCheck(check);
+      } catch {
+        setDeliveryCheck(null);
+      } finally {
+        setCheckingDelivery(false);
+      }
+    }, 800);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [address, projectRef]);
 
   const grandTotal = totalCents + DELIVERY_FEE_CENTS;
+  const cannotDeliver = deliveryCheck !== null && !deliveryCheck.deliverable;
 
   async function handlePlaceOrder() {
     if (!address.trim()) {
@@ -62,7 +89,7 @@ export default function CheckoutScreen() {
         },
       });
       clear();
-      Alert.alert("Order Placed!", "Your order has been placed successfully.", [
+      Alert.alert("Order Placed!", "Your order has been placed (status: placed) and will appear in your orders.", [
         {
           text: "View Orders",
           onPress: () => router.replace("/(tabs)/orders"),
@@ -153,10 +180,26 @@ export default function CheckoutScreen() {
           </View>
         </View>
 
+        {checkingDelivery && (
+          <View style={styles.checkingRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.checkingText}>Checking delivery availability...</Text>
+          </View>
+        )}
+
+        {cannotDeliver && (
+          <View style={styles.deliveryWarning}>
+            <Ionicons name="warning-outline" size={18} color={colors.destructive} />
+            <Text style={styles.deliveryWarningText}>
+              Sorry, this restaurant doesn't deliver to your area
+            </Text>
+          </View>
+        )}
+
         <TouchableOpacity
-          style={[styles.placeOrderButton, loading && styles.buttonDisabled]}
+          style={[styles.placeOrderButton, (loading || cannotDeliver) && styles.buttonDisabled]}
           onPress={handlePlaceOrder}
-          disabled={loading}
+          disabled={loading || cannotDeliver}
           activeOpacity={0.8}
         >
           {loading ? (
@@ -290,5 +333,32 @@ const styles = StyleSheet.create({
     color: colors.primaryForeground,
     fontSize: fontSize.base,
     fontWeight: "700",
+  },
+  checkingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  checkingText: {
+    fontSize: fontSize.sm,
+    color: colors.mutedForeground,
+  },
+  deliveryWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.destructive + "15",
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.destructive + "40",
+  },
+  deliveryWarningText: {
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+    color: colors.destructive,
+    flex: 1,
   },
 });

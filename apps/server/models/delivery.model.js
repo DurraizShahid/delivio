@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const BaseModel = require('./base.model');
 const { select, insert, update } = require('../lib/supabase');
 
-const VALID_STATUSES = ['assigned', 'picked_up', 'delivered'];
+const VALID_STATUSES = ['pending', 'assigned', 'picked_up', 'arrived', 'delivered'];
 
 class DeliveryModel extends BaseModel {
   constructor() {
@@ -16,9 +16,13 @@ class DeliveryModel extends BaseModel {
     return rows?.[0] || null;
   }
 
-  async findForRider(riderId, zoneId) {
+  async findForRider(riderId, zoneId, status) {
     const filters = { rider_id: riderId };
     if (zoneId) filters.zone_id = zoneId;
+    if (status === 'delivered') filters.status = 'delivered';
+    else if (status === 'assigned') {
+      filters.status = ['assigned', 'picked_up', 'arrived'];
+    }
     return this.findMany(filters, { order: 'created_at.desc' });
   }
 
@@ -35,7 +39,7 @@ class DeliveryModel extends BaseModel {
       id: uuidv4(),
       order_id: orderId,
       rider_id: null,
-      status: 'assigned',
+      status: 'pending',
       zone_id: zoneId || null,
       eta_minutes: etaMinutes || null,
       created_at: new Date().toISOString(),
@@ -56,6 +60,21 @@ class DeliveryModel extends BaseModel {
     }
     const rows = await update(this.table, {
       status: newStatus,
+      updated_at: new Date().toISOString(),
+    }, { id: deliveryId });
+    return Array.isArray(rows) ? rows[0] : rows;
+  }
+
+  async findAvailableInRadius(lat, lon, radiusKm) {
+    // Geo-filtering placeholder — returns all pending deliveries for now.
+    // Full radius filtering requires PostGIS (ST_DWithin).
+    return this.findMany({ status: 'pending' }, { order: 'created_at.desc' });
+  }
+
+  async reassign(deliveryId) {
+    const rows = await update(this.table, {
+      rider_id: null,
+      status: 'pending',
       updated_at: new Date().toISOString(),
     }, { id: deliveryId });
     return Array.isArray(rows) ? rows[0] : rows;

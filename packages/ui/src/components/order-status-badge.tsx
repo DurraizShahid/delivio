@@ -7,13 +7,16 @@ const statusConfig: Record<
   OrderStatus,
   { label: string; variant: "default" | "secondary" | "success" | "warning" | "destructive" }
 > = {
-  pending: { label: "Pending", variant: "secondary" },
+  placed: { label: "Placed", variant: "secondary" },
   scheduled: { label: "Scheduled", variant: "secondary" },
-  accepted_by_vendor: { label: "Accepted", variant: "default" },
+  accepted: { label: "Accepted", variant: "default" },
+  rejected: { label: "Rejected", variant: "destructive" },
   preparing: { label: "Preparing", variant: "warning" },
   ready: { label: "Ready", variant: "warning" },
+  assigned: { label: "Rider Assigned", variant: "default" },
   picked_up: { label: "Picked Up", variant: "default" },
-  delivered: { label: "Delivered", variant: "success" },
+  arrived: { label: "Rider Arrived", variant: "success" },
+  completed: { label: "Completed", variant: "success" },
   cancelled: { label: "Cancelled", variant: "destructive" },
 };
 

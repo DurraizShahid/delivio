@@ -100,6 +100,71 @@ async function sendCancellationEmail(customerEmail, order, reason) {
   await sendEmail({ to: customerEmail, ...template });
 }
 
+/**
+ * Notify customer that their order was rejected.
+ */
+async function notifyOrderRejected(order, customerId) {
+  if (!customerId) return;
+  const tokens = await getUserTokens(customerId, order.project_ref);
+  if (tokens.length) {
+    await sendPushToMultiple({
+      tokens,
+      title: 'Order Rejected',
+      body: 'Your order was rejected by the restaurant',
+      data: { type: 'order_rejected', orderId: order.id },
+    });
+  }
+}
+
+/**
+ * Notify customer that their rider has arrived.
+ */
+async function notifyRiderArrived(delivery, orderId, projectRef) {
+  const orderModel = require('../models/order.model');
+  const order = await orderModel.findById(orderId);
+  if (!order?.customer_id) return;
+  const tokens = await getUserTokens(order.customer_id, projectRef);
+  if (tokens.length) {
+    await sendPushToMultiple({
+      tokens,
+      title: 'Rider Arrived',
+      body: 'Your rider has arrived!',
+      data: { type: 'rider_arrived', deliveryId: delivery.id, orderId },
+    });
+  }
+}
+
+/**
+ * Notify customer that their order has been completed.
+ */
+async function notifyOrderCompleted(order, customerId) {
+  if (!customerId) return;
+  const tokens = await getUserTokens(customerId, order.project_ref);
+  if (tokens.length) {
+    await sendPushToMultiple({
+      tokens,
+      title: 'Order Delivered',
+      body: 'Your order has been delivered! Rate your experience',
+      data: { type: 'order_completed', orderId: order.id },
+    });
+  }
+}
+
+/**
+ * Notify riders of a new delivery request.
+ */
+async function notifyDeliveryRequest(delivery, riderId, projectRef) {
+  const tokens = await getUserTokens(riderId, projectRef);
+  if (tokens.length) {
+    await sendPushToMultiple({
+      tokens,
+      title: 'New Delivery Available',
+      body: 'New delivery available near you',
+      data: { type: 'delivery_request', deliveryId: delivery.id },
+    });
+  }
+}
+
 module.exports = {
   notifyNewOrder,
   notifyOrderStatusChange,
@@ -107,4 +172,8 @@ module.exports = {
   notifyNewMessage,
   sendRefundEmail,
   sendCancellationEmail,
+  notifyOrderRejected,
+  notifyRiderArrived,
+  notifyOrderCompleted,
+  notifyDeliveryRequest,
 };

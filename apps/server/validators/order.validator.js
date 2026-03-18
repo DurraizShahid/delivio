@@ -19,9 +19,17 @@ const createOrderSchema = z.object({
 
 const updateStatusSchema = z.object({
   status: z.enum([
-    'pending', 'accepted_by_vendor', 'preparing', 'ready',
-    'picked_up', 'delivered', 'cancelled', 'scheduled',
+    'placed', 'accepted', 'rejected', 'preparing', 'ready',
+    'assigned', 'picked_up', 'arrived', 'completed', 'cancelled', 'scheduled',
   ]),
+});
+
+const rejectSchema = z.object({
+  reason: z.string().max(500).optional(),
+});
+
+const acceptSchema = z.object({
+  prepTimeMinutes: z.number().int().min(5).max(120).optional(),
 });
 
 const refundSchema = z.object({
@@ -41,10 +49,17 @@ const listOrdersSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+const extendSlaSchema = z.object({
+  additionalMinutes: z.number().int().min(5).max(60).optional(),
+});
+
 module.exports = {
   createOrderSchema,
   updateStatusSchema,
   refundSchema,
   cancelSchema,
   listOrdersSchema,
+  rejectSchema,
+  acceptSchema,
+  extendSlaSchema,
 };
