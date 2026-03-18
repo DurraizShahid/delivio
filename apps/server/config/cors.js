@@ -7,7 +7,19 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, curl, server-to-server)
     if (!origin) return callback(null, true);
 
-    if (config.cors.origins.includes(origin)) {
+    const normalizedOrigin = String(origin).trim().toLowerCase();
+    const allowed = config.cors.origins.map((o) => String(o).trim().toLowerCase());
+
+    // In development, allow any localhost port to reduce friction across apps
+    // (customer/vendor/rider/admin all run on different ports).
+    if (!config.isProd) {
+      const isLocalhost =
+        /^https?:\/\/localhost(:\d+)?$/.test(normalizedOrigin) ||
+        /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(normalizedOrigin);
+      if (isLocalhost) return callback(null, true);
+    }
+
+    if (allowed.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 
