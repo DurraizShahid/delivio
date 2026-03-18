@@ -221,6 +221,17 @@ export interface Product {
   imageUrl?: string;
   available: boolean;
   createdAt: string;
+  updatedAt?: string;
+  sortOrder?: number;
+}
+
+export interface Category {
+  id: string;
+  projectRef: string;
+  name: string;
+  sortOrder?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Workspace {

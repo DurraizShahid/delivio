@@ -14,7 +14,7 @@ import {
   OrderStatusBadge,
   PriceDisplay,
 } from "@delivio/ui";
-import type { Order, OrderStatus } from "@delivio/types";
+import type { Order } from "@delivio/types";
 import { useOrders } from "@/hooks/use-orders";
 import { useWSEvent } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
@@ -47,8 +47,12 @@ function ActionButtons({
       await action();
       toast.success(`Order ${label.toLowerCase()}`);
       onMutate();
-    } catch (err: any) {
-      toast.error(err.message || `Failed to ${label.toLowerCase()}`);
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : `Failed to ${label.toLowerCase()}`;
+      toast.error(message);
     } finally {
       setLoading(null);
     }

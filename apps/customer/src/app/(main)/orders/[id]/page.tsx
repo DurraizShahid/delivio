@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, AlertTriangle, MessageCircle, Phone, Star, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -86,9 +86,12 @@ function SlaCountdown({ slaDeadline }: { slaDeadline: string }) {
   }, [slaDeadline]);
 
   useEffect(() => {
-    tick();
+    const t = setTimeout(() => tick(), 0);
     const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(t);
+      clearInterval(id);
+    };
   }, [tick]);
 
   return (
@@ -136,6 +139,12 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const [vendorRating, setVendorRating] = useState(0);
+  const [riderRating, setRiderRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [tipCents, setTipCents] = useState<number | null>(null);
+  const [customTipCents, setCustomTipCents] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -144,25 +153,7 @@ export default function OrderDetailPage() {
   }, [isAuthenticated, authLoading, router]);
 
   const { data: rawOrder, isLoading } = useOrder(id);
-
-  if (authLoading) {
-    return (
-      <div className="mx-auto max-w-md space-y-4 px-4 pt-4">
-        <Skeleton className="h-6 w-1/3" />
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <Skeleton className="h-48 w-full rounded-lg" />
-      </div>
-    );
-  }
-  if (!isAuthenticated) return null;
-  const order = rawOrder ? normalizeOrder(rawOrder) : null;
-
-  const [vendorRating, setVendorRating] = useState(0);
-  const [riderRating, setRiderRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [tipCents, setTipCents] = useState<number | null>(null);
-  const [customTipCents, setCustomTipCents] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const order = useMemo(() => (rawOrder ? normalizeOrder(rawOrder) : null), [rawOrder]);
 
   useWSEvent("order:status_changed", (event) => {
     if (event.orderId === id) {
@@ -185,6 +176,17 @@ export default function OrderDetailPage() {
   useWSEvent("delivery:location_update", () => {
     // Future: update map marker
   });
+
+  if (authLoading) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 px-4 pt-4">
+        <Skeleton className="h-6 w-1/3" />
+        <Skeleton className="h-32 w-full rounded-lg" />
+        <Skeleton className="h-48 w-full rounded-lg" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return null;
 
   const handleSubmitRating = async () => {
     if (!order) return;
@@ -256,7 +258,7 @@ export default function OrderDetailPage() {
   const hasDelivery = !!order.delivery?.riderId;
   const slaOverdue = order.slaDeadline ? new Date(order.slaDeadline).getTime() < Date.now() : false;
   const isLate =
-    ((order as any).slaBreached || slaOverdue) &&
+    (order.slaBreached || slaOverdue) &&
     !["completed", "cancelled", "rejected"].includes(order.status);
 
   return (

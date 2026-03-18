@@ -32,8 +32,12 @@ export default function LoginPage() {
       await api.auth.sendOTP(phone, PROJECT_REF);
       setStep("otp");
       toast.success("OTP sent to your phone");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send OTP");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Failed to send OTP";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -51,8 +55,12 @@ export default function LoginPage() {
       setCustomer(result.customer);
       toast.success("Welcome back!");
       router.push("/");
-    } catch (err: any) {
-      toast.error(err.message || "Invalid OTP");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Invalid OTP";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

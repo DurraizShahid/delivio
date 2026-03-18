@@ -38,7 +38,7 @@ export default function SettingsPage() {
       setPrepTime(settings.defaultPrepTimeMinutes);
       setDeliveryMode(settings.deliveryMode);
       setDeliveryRadius(settings.deliveryRadiusKm);
-      setAutoDispatchDelay((settings as any).autoDispatchDelayMinutes ?? 0);
+      setAutoDispatchDelay((settings as VendorSettings & { autoDispatchDelayMinutes?: number }).autoDispatchDelayMinutes ?? 0);
     }
   }, [settings]);
 
@@ -54,8 +54,12 @@ export default function SettingsPage() {
       });
       toast.success("Settings saved");
       queryClient.invalidateQueries({ queryKey: ["vendor-settings"] });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save settings");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Failed to save settings";
+      toast.error(message);
     } finally {
       setSaving(false);
     }

@@ -2,6 +2,7 @@
 
 const config = require('../config');
 const { select } = require('../lib/supabase');
+const { mapProduct, mapCategory, mapWorkspace } = require('../lib/case');
 
 async function healthCheck(req, res) {
   return res.json({
@@ -37,7 +38,13 @@ async function publicRead(req, res, next) {
     }
 
     const rows = await select(table, { filters });
-    return res.json({ data: rows || [] });
+    const data = (rows || []).map((r) => {
+      if (table === 'products') return mapProduct(r);
+      if (table === 'categories') return mapCategory(r);
+      if (table === 'workspaces') return mapWorkspace(r);
+      return r;
+    });
+    return res.json({ data });
   } catch (err) {
     next(err);
   }

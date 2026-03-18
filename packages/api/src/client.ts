@@ -10,6 +10,7 @@ import type {
   Customer,
   CustomerAddress,
   Product,
+  Category,
   Workspace,
   PaymentIntentResponse,
   PushPlatform,
@@ -166,6 +167,33 @@ export interface ApiClient {
       deliveryRadiusKm: number;
     }>): Promise<VendorSettings>;
   };
+  catalog: {
+    listCategories(): Promise<{ categories: Category[] }>;
+    createCategory(params: { name: string; sortOrder?: number }): Promise<{ category: Category }>;
+    updateCategory(id: string, params: Partial<{ name: string; sortOrder: number }>): Promise<{ category: Category }>;
+    deleteCategory(id: string): Promise<{ ok: boolean }>;
+
+    listProducts(params?: { includeUnavailable?: boolean }): Promise<{ products: Product[] }>;
+    createProduct(params: {
+      name: string;
+      description?: string | null;
+      priceCents: number;
+      category?: string | null;
+      imageUrl?: string | null;
+      available?: boolean;
+      sortOrder?: number;
+    }): Promise<{ product: Product }>;
+    updateProduct(id: string, params: Partial<{
+      name: string;
+      description: string | null;
+      priceCents: number;
+      category: string | null;
+      imageUrl: string | null;
+      available: boolean;
+      sortOrder: number;
+    }>): Promise<{ product: Product }>;
+    deleteProduct(id: string): Promise<{ ok: boolean }>;
+  };
   public: {
     products(
       ref: string,
@@ -296,6 +324,22 @@ export function createApiClient(baseUrl: string): ApiClient {
     vendorSettings: {
       get: () => get("/api/vendor-settings"),
       update: (settings) => patch("/api/vendor-settings", settings),
+    },
+    catalog: {
+      listCategories: () => get("/api/catalog/categories"),
+      createCategory: (params) => post("/api/catalog/categories", params),
+      updateCategory: (id, params) => patch(`/api/catalog/categories/${id}`, params),
+      deleteCategory: (id) => del(`/api/catalog/categories/${id}`),
+
+      listProducts: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.includeUnavailable === false) qs.set("includeUnavailable", "false");
+        const q = qs.toString();
+        return get(`/api/catalog/products${q ? `?${q}` : ""}`);
+      },
+      createProduct: (params) => post("/api/catalog/products", params),
+      updateProduct: (id, params) => patch(`/api/catalog/products/${id}`, params),
+      deleteProduct: (id) => del(`/api/catalog/products/${id}`),
     },
     public: {
       products: (ref, table = "products") =>

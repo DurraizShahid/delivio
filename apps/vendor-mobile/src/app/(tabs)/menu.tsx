@@ -7,10 +7,11 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import type { Product } from "@delivio/types";
+import type { Product, Category } from "@delivio/types";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
@@ -21,11 +22,29 @@ function formatCents(cents: number) {
 
 export default function MenuScreen() {
   const user = useAuthStore((s) => s.user);
+  const qc = useQueryClient();
+  const router = useRouter();
 
-  const { data: products, isLoading } = useQuery<Product[]>({
-    queryKey: ["vendor-products", user?.projectRef],
-    queryFn: () => api.public.products(user!.projectRef) as Promise<Product[]>,
+  const { data: catRes } = useQuery<{ categories: Category[] }>({
+    queryKey: ["catalog", "categories", user?.projectRef],
+    queryFn: () => api.catalog.listCategories(),
     enabled: !!user?.projectRef,
+  });
+
+  const { data: res, isLoading } = useQuery<{ products: Product[] }>({
+    queryKey: ["vendor-products", user?.projectRef],
+    queryFn: () => api.catalog.listProducts(),
+    enabled: !!user?.projectRef,
+  });
+  const products = res?.products ?? [];
+
+  const categoryNames = (catRes?.categories ?? []).map((c) => c.name).sort();
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, available }: { id: string; available: boolean }) =>
+      api.catalog.updateProduct(id, { available }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["vendor-products", user?.projectRef] }),
   });
 
   const renderProduct = ({ item }: { item: Product }) => (
@@ -38,11 +57,18 @@ export default function MenuScreen() {
       <View style={styles.productActions}>
         <Switch
           value={item.available}
-          onValueChange={() => {}}
+          onValueChange={() =>
+            toggleMutation.mutate({ id: item.id, available: !item.available })
+          }
+          disabled={toggleMutation.isPending}
           trackColor={{ false: colors.border, true: colors.success + "60" }}
           thumbColor={item.available ? colors.success : colors.mutedForeground}
         />
-        <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.editBtn}
+          activeOpacity={0.7}
+          onPress={() => router.push(`/product/${item.id}`)}
+        >
           <Ionicons name="create-outline" size={18} color={colors.mutedForeground} />
         </TouchableOpacity>
       </View>
@@ -60,6 +86,14 @@ export default function MenuScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Text style={styles.screenTitle}>Menu</Text>
+      {categoryNames.length > 0 && (
+        <View style={styles.categoriesRow}>
+          <Text style={styles.categoriesLabel}>Categories:</Text>
+          <Text style={styles.categoriesValue} numberOfLines={1}>
+            {categoryNames.join(", ")}
+          </Text>
+        </View>
+      )}
       <FlatList
         data={products}
         keyExtractor={(p) => p.id}
@@ -74,7 +108,11 @@ export default function MenuScreen() {
         }
       />
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.85}
+        onPress={() => router.push("/product/new")}
+      >
         <Ionicons name="add" size={28} color={colors.primaryForeground} />
       </TouchableOpacity>
     </SafeAreaView>
@@ -93,6 +131,15 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   list: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
+  categoriesRow: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
+    flexDirection: "row",
+    gap: spacing.sm,
+    alignItems: "center",
+  },
+  categoriesLabel: { fontSize: fontSize.xs, color: colors.mutedForeground, fontWeight: "600" },
+  categoriesValue: { flex: 1, fontSize: fontSize.xs, color: colors.mutedForeground },
   productCard: {
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,

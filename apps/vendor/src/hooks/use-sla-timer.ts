@@ -7,8 +7,8 @@ export function useSLATimer(deadline: string | null): number | null {
 
   useEffect(() => {
     if (!deadline) {
-      setRemaining(null);
-      return;
+      const id = window.setTimeout(() => setRemaining(null), 0);
+      return () => window.clearTimeout(id);
     }
 
     function tick() {

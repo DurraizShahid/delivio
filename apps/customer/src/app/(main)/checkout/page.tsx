@@ -68,7 +68,7 @@ export default function CheckoutPage() {
 
     setLoading(true);
     try {
-      const intent = await api.payments.createIntent({
+      await api.payments.createIntent({
         amountCents: total,
         currency: "gbp",
         metadata: { address },
@@ -76,8 +76,12 @@ export default function CheckoutPage() {
       toast.success("Order placed! Payment processing...");
       clear();
       router.push("/orders");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to place order");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Failed to place order";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

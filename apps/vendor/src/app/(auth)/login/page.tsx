@@ -15,6 +15,7 @@ import {
 } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
+import type { User } from "@delivio/types";
 
 export default function VendorLoginPage() {
   const router = useRouter();
@@ -35,11 +36,15 @@ export default function VendorLoginPage() {
     setLoading(true);
     try {
       const result = await api.auth.login(email, password);
-      setUser(result.user as any);
+      setUser(result.user as unknown as User);
       toast.success("Welcome back!");
       router.push("/");
-    } catch (err: any) {
-      toast.error(err.message || "Invalid email or password");
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message?: unknown }).message)
+          : "Invalid email or password";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

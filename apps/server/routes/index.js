@@ -18,6 +18,7 @@ const ratingRoutes          = require('./rating.routes');
 const tipRoutes             = require('./tip.routes');
 const vendorSettingsRoutes  = require('./vendor-settings.routes');
 const adminSettingsRoutes   = require('./admin-settings.routes');
+const catalogRoutes         = require('./catalog.routes');
 
 const router = Router();
 
@@ -36,6 +37,7 @@ router.use('/deliveries',  deliveryRoutes);
 router.use('/chat',        chatRoutes);
 router.use('/push',        pushRoutes);
 router.use('/workspace',   workspaceRoutes);
+router.use('/catalog',     catalogRoutes);
 
 // Ratings, tips, vendor settings
 router.use('/ratings',          requireAnyAuth, ratingRoutes);

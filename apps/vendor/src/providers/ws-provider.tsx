@@ -4,9 +4,9 @@ import {
   createContext,
   useContext,
   useEffect,
-  useState,
   useRef,
   useCallback,
+  useMemo,
 } from "react";
 import { createWSClient, type WSClient } from "@delivio/api";
 import type { WSEvent } from "@delivio/types";
@@ -19,29 +19,26 @@ const WS_URL =
     .replace(/^http/, "ws") + "/ws";
 
 export function WSProvider({ children }: { children: React.ReactNode }) {
-  const [client, setClient] = useState<WSClient | null>(null);
   const queryClient = useQueryClient();
+  const client = useMemo(() => createWSClient(WS_URL), []);
 
   useEffect(() => {
-    const wsClient = createWSClient(WS_URL);
-    wsClient.connect();
-    setClient(wsClient);
+    client.connect();
 
     const unsubs = [
-      wsClient.subscribe("order:status_changed", () => {
+      client.subscribe("order:status_changed", () => {
         queryClient.invalidateQueries({ queryKey: ["orders"] });
       }),
-      wsClient.subscribe("chat:message", () => {
+      client.subscribe("chat:message", () => {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });
       }),
     ];
 
     return () => {
       unsubs.forEach((u) => u());
-      wsClient.disconnect();
-      setClient(null);
+      client.disconnect();
     };
-  }, [queryClient]);
+  }, [client, queryClient]);
 
   return (
     <WSContext.Provider value={client}>
@@ -60,7 +57,9 @@ export function useWSEvent<T extends WSEvent["type"]>(
 ) {
   const ws = useWS();
   const handlerRef = useRef(handler);
-  handlerRef.current = handler;
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   const stableHandler = useCallback(
     (event: Extract<WSEvent, { type: T }>) => handlerRef.current(event),

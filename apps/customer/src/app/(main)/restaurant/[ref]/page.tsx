@@ -39,6 +39,11 @@ export default function RestaurantPage() {
     );
   }, [products, activeCategory]);
 
+  const availableProducts = useMemo(
+    () => filtered.filter((p) => p.available),
+    [filtered]
+  );
+
   function handleAddToCart(product: Product) {
     if (projectRef && projectRef !== ref) {
       if (
@@ -123,10 +128,10 @@ export default function RestaurantPage() {
           )}
 
           <div className="mt-4 space-y-3">
-            {filtered.length === 0 ? (
+            {availableProducts.length === 0 ? (
               <EmptyState title="No items available" />
             ) : (
-              filtered.map((product) => (
+              availableProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden">
                   <CardContent className="flex items-center gap-4 p-4">
                     {product.imageUrl ? (
