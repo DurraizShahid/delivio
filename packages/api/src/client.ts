@@ -275,7 +275,9 @@ export function createApiClient(baseUrl: string): ApiClient {
         const qs = new URLSearchParams();
         if (params?.zoneId) qs.set("zoneId", params.zoneId);
         if (params?.status) qs.set("status", params.status);
-        return get(`/api/deliveries/rider/deliveries?${qs}`);
+        return get<{ deliveries: Delivery[] }>(
+          `/api/deliveries/rider/deliveries?${qs}`
+        ).then((r) => r.deliveries);
       },
       claim: (id) => post(`/api/deliveries/${id}/claim`),
       updateStatus: (id, status) =>
@@ -293,7 +295,10 @@ export function createApiClient(baseUrl: string): ApiClient {
     chat: {
       createConversation: (params) =>
         post("/api/chat/conversations", params),
-      listConversations: () => get("/api/chat/conversations"),
+      listConversations: () =>
+        get<{ conversations: Conversation[] }>("/api/chat/conversations").then(
+          (r) => r.conversations
+        ),
       getMessages: (conversationId, page) =>
         get(
           `/api/chat/conversations/${conversationId}/messages${page ? `?page=${page}` : ""}`
@@ -345,7 +350,24 @@ export function createApiClient(baseUrl: string): ApiClient {
     },
     public: {
       products: (ref, table = "products") =>
-        get(`/api/public/${ref}/${table}`),
+        get<unknown>(`/api/public/${ref}/${table}`).then((data) => {
+          if (Array.isArray(data)) return data as Product[];
+          if (
+            data &&
+            typeof data === "object" &&
+            "products" in data &&
+            Array.isArray((data as any).products)
+          )
+            return (data as any).products as Product[];
+          if (
+            data &&
+            typeof data === "object" &&
+            "items" in data &&
+            Array.isArray((data as any).items)
+          )
+            return (data as any).items as Product[];
+          return [];
+        }),
       workspace: (ref) => get(`/api/workspace/${ref}`),
       geocode: (address) =>
         get(`/api/geocode?address=${encodeURIComponent(address)}`),

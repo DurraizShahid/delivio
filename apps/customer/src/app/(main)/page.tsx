@@ -16,7 +16,12 @@ import type { Workspace } from "@delivio/types";
 
 const DEMO_REFS = (
   process.env.NEXT_PUBLIC_RESTAURANT_REFS || "demo"
-).split(",");
+)
+  .split(",")
+  .map((r) => r.trim())
+  .filter(Boolean)
+  // Ensure stable unique keys + avoid duplicate fetches
+  .filter((ref, idx, arr) => arr.indexOf(ref) === idx);
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
@@ -25,7 +30,7 @@ export default function HomePage() {
     queryKey: ["restaurants"],
     queryFn: async () => {
       const results = await Promise.allSettled(
-        DEMO_REFS.map((ref) => api.public.workspace(ref.trim()))
+        DEMO_REFS.map((ref) => api.public.workspace(ref))
       );
       return results
         .filter(
@@ -94,7 +99,7 @@ export default function HomePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((restaurant) => (
             <Link
-              key={restaurant.projectRef}
+              key={restaurant.id}
               href={`/restaurant/${restaurant.projectRef}`}
             >
               <Card className="overflow-hidden transition-shadow hover:shadow-md">

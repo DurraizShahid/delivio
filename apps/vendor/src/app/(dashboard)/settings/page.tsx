@@ -35,9 +35,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setAutoAccept(settings.autoAccept);
-      setPrepTime(settings.defaultPrepTimeMinutes);
-      setDeliveryMode(settings.deliveryMode);
-      setDeliveryRadius(settings.deliveryRadiusKm);
+      setPrepTime(settings.defaultPrepTimeMinutes ?? 15);
+      setDeliveryMode(settings.deliveryMode ?? "third_party");
+      setDeliveryRadius(settings.deliveryRadiusKm ?? 5);
       setAutoDispatchDelay((settings as VendorSettings & { autoDispatchDelayMinutes?: number }).autoDispatchDelayMinutes ?? 0);
     }
   }, [settings]);
