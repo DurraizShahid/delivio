@@ -49,5 +49,5 @@ jobs:
         run: |
           sleep 15
           curl --fail --retry 5 --retry-delay 5 \
-            ${{ secrets.BACKEND_URL }}/api/health
+            ${{ secrets.BACKEND_URL || 'https://delivio-production.up.railway.app' }}/api/health
         timeout-minutes: 2

@@ -14,9 +14,15 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const WSContext = createContext<WSClient | null>(null);
 
-const WS_URL =
-  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080")
-    .replace(/^http/, "ws") + "/ws";
+const DEFAULT_API_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://delivio-production.up.railway.app"
+    : "http://localhost:8080";
+
+const WS_URL = (process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_URL).replace(
+  /^http/,
+  "ws"
+) + "/ws";
 
 export function WSProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
