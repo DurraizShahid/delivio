@@ -1,7 +1,7 @@
 'use strict';
 
 // Load .env before anything else
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const http = require('http');
 const app = require('./app');

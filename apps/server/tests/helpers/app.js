@@ -12,7 +12,6 @@
  */
 
 const request = require('supertest');
-const { vi } = require('vitest');
 
 /**
  * Build a supertest agent from the express app with session middleware bypassed.
