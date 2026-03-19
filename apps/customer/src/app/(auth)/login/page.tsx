@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, ArrowRight, Loader2 } from "lucide-react";
+import { Phone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@delivio/ui";
+import { Button, Input } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
+import Link from "next/link";
 
 const PROJECT_REF = process.env.NEXT_PUBLIC_PROJECT_REF || "demo";
 
@@ -21,6 +22,7 @@ export default function LoginPage() {
       router.replace("/");
     }
   }, [isAuthenticated, isLoading, router]);
+
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,57 +69,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.08] via-background to-background" />
-        <div className="absolute left-1/2 top-0 h-64 w-[640px] -translate-x-1/2 rounded-full bg-primary/[0.08] blur-3xl" />
+    <div className="relative flex min-h-screen">
+      {/* Left side — decorative */}
+      <div className="hidden w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background lg:flex lg:items-center lg:justify-center">
+        <div className="max-w-md px-12">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
+              <span className="text-xl font-bold text-primary-foreground">D</span>
+            </div>
+            <span className="text-3xl font-bold tracking-tight">Delivio</span>
+          </div>
+          <h2 className="mt-8 text-3xl font-bold leading-tight">
+            Delicious food,
+            <br />
+            delivered fast.
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Order from the best restaurants near you. Track your delivery in real-time.
+          </p>
+        </div>
       </div>
 
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-        <div className="mb-6 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <span className="text-base font-bold">D</span>
+      {/* Right side — form */}
+      <div className="flex flex-1 flex-col">
+        {/* Top nav */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Back to home
+          </Link>
+          <div className="flex items-center gap-2 lg:hidden">
+            <div className="flex size-8 items-center justify-center rounded-xl bg-primary shadow-sm">
+              <span className="text-sm font-bold text-primary-foreground">D</span>
             </div>
-            <div className="leading-tight">
-              <div className="text-lg font-semibold tracking-tight">Delivio</div>
-              <div className="text-sm text-muted-foreground">
-                Food delivery, done right
-              </div>
-            </div>
+            <span className="font-bold">Delivio</span>
           </div>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl tracking-tight">
-              {step === "phone" ? "Welcome back" : "Verify your code"}
-            </CardTitle>
-            <CardDescription>
-              {step === "phone"
-                ? "Enter your phone number to sign in."
-                : "Enter the 6‑digit code we sent to your phone."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Form */}
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="w-full max-w-sm">
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-bold tracking-tight">
+                {step === "phone" ? "Welcome back" : "Verify your code"}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {step === "phone"
+                  ? "Enter your phone number to sign in or create an account."
+                  : "Enter the 6-digit code we sent to your phone."}
+              </p>
+            </div>
+
             {step === "phone" ? (
               <form onSubmit={handleSendOTP} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="customer-phone">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="customer-phone"
+                  >
                     Phone number
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Phone className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="customer-phone"
                       type="tel"
                       placeholder="+44 7700 900000"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="pl-10"
+                      className="rounded-xl pl-10"
                       required
                       autoFocus
                       autoComplete="tel"
@@ -126,13 +149,14 @@ export default function LoginPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full gap-2"
+                  className="w-full gap-2 rounded-xl"
+                  size="lg"
                   disabled={loading || !phone}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Sending code…
+                      Sending code...
                     </>
                   ) : (
                     <>
@@ -144,7 +168,10 @@ export default function LoginPage() {
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="customer-otp">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="customer-otp"
+                  >
                     Verification code
                   </label>
                   <Input
@@ -155,24 +182,27 @@ export default function LoginPage() {
                     maxLength={6}
                     placeholder="000000"
                     value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    className="text-center text-2xl tracking-[0.5em]"
+                    onChange={(e) =>
+                      setCode(e.target.value.replace(/\D/g, ""))
+                    }
+                    className="rounded-xl text-center text-2xl tracking-[0.5em]"
                     required
                     autoFocus
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full gap-2"
+                  className="w-full gap-2 rounded-xl"
+                  size="lg"
                   disabled={loading || code.length !== 6}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      Verifying…
+                      Verifying...
                     </>
                   ) : (
-                    "Verify"
+                    "Verify & Sign In"
                   )}
                 </Button>
                 <button
@@ -181,14 +211,19 @@ export default function LoginPage() {
                     setStep("phone");
                     setCode("");
                   }}
-                  className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+                  className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Change phone number
                 </button>
               </form>
             )}
-          </CardContent>
-        </Card>
+
+            <p className="mt-8 text-center text-xs text-muted-foreground">
+              By continuing, you agree to our Terms of Service and Privacy
+              Policy.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

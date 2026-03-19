@@ -54,6 +54,62 @@ const updateShopSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const themeColorsSchema = z.object({
+  primary: z.string().max(100).optional(),
+  primaryForeground: z.string().max(100).optional(),
+  secondary: z.string().max(100).optional(),
+  secondaryForeground: z.string().max(100).optional(),
+  accent: z.string().max(100).optional(),
+  accentForeground: z.string().max(100).optional(),
+  background: z.string().max(100).optional(),
+  foreground: z.string().max(100).optional(),
+  muted: z.string().max(100).optional(),
+  mutedForeground: z.string().max(100).optional(),
+  destructive: z.string().max(100).optional(),
+  card: z.string().max(100).optional(),
+  cardForeground: z.string().max(100).optional(),
+  border: z.string().max(100).optional(),
+});
+
+const upsertThemeSchema = z.object({
+  appTarget: z.enum([
+    'global',
+    'customer_web', 'rider_web', 'vendor_web', 'superadmin_web',
+    'customer_mobile', 'rider_mobile', 'vendor_mobile',
+  ]),
+  workspaceId: z.string().uuid().optional().nullable(),
+  lightTheme: themeColorsSchema,
+  darkTheme: themeColorsSchema,
+});
+
+const createBannerSchema = z.object({
+  title: z.string().min(1).max(200),
+  subtitle: z.string().max(500).optional().nullable(),
+  ctaText: z.string().max(100).optional().nullable(),
+  ctaLink: z.string().max(500).optional().nullable(),
+  imageUrl: z.string().max(500).optional().nullable(),
+  bgGradient: z.string().max(200).optional(),
+  textColor: z.string().max(50).optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  startsAt: z.string().max(100).optional().nullable(),
+  endsAt: z.string().max(100).optional().nullable(),
+});
+
+const updateBannerSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  subtitle: z.string().max(500).optional().nullable(),
+  ctaText: z.string().max(100).optional().nullable(),
+  ctaLink: z.string().max(500).optional().nullable(),
+  imageUrl: z.string().max(500).optional().nullable(),
+  bgGradient: z.string().max(200).optional(),
+  textColor: z.string().max(50).optional(),
+  sortOrder: z.number().int().min(0).optional(),
+  isActive: z.boolean().optional(),
+  startsAt: z.string().max(100).optional().nullable(),
+  endsAt: z.string().max(100).optional().nullable(),
+});
+
 module.exports = {
   createWorkspaceSchema,
   updateWorkspaceSchema,
@@ -61,4 +117,7 @@ module.exports = {
   updateUserSchema,
   createShopSchema,
   updateShopSchema,
+  upsertThemeSchema,
+  createBannerSchema,
+  updateBannerSchema,
 };

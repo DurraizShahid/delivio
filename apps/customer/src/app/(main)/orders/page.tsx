@@ -3,12 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ClipboardList, ChevronRight } from "lucide-react";
+import { ClipboardList, ChevronRight, Package } from "lucide-react";
 import {
-  Card,
-  CardContent,
   Skeleton,
-  EmptyState,
   OrderStatusBadge,
   PriceDisplay,
 } from "@delivio/ui";
@@ -29,9 +26,10 @@ export default function OrdersPage() {
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8 lg:px-8">
+        <Skeleton className="h-8 w-40" />
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          <Skeleton key={i} className="h-24 w-full rounded-2xl" />
         ))}
       </div>
     );
@@ -39,44 +37,55 @@ export default function OrdersPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="mx-auto max-w-md px-4 pt-6">
-      <h1 className="mb-4 text-2xl font-bold">Your Orders</h1>
+    <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
+      <h1 className="mb-6 text-2xl font-bold">Your Orders</h1>
 
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg" />
+            <Skeleton key={i} className="h-24 w-full rounded-2xl" />
           ))}
         </div>
       ) : !orders || orders.length === 0 ? (
-        <EmptyState
-          icon={<ClipboardList />}
-          title="No orders yet"
-          description="Place your first order to see it here"
-        />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex size-20 items-center justify-center rounded-full bg-muted">
+            <ClipboardList className="size-10 text-muted-foreground" />
+          </div>
+          <h3 className="mt-5 text-lg font-semibold">No orders yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Place your first order to see it here
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (
-            <Link key={order.id} href={`/orders/${order.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        Order #{order.id.slice(0, 8)}
-                      </span>
-                      <OrderStatusBadge status={order.status} />
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <PriceDisplay cents={order.totalCents} />
-                      <span>
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </CardContent>
-              </Card>
+            <Link
+              key={order.id}
+              href={`/orders/${order.id}`}
+              className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4 transition-all hover:border-border hover:shadow-md"
+            >
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Package className="size-6 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">
+                    Order #{order.id.slice(0, 8)}
+                  </span>
+                  <OrderStatusBadge status={order.status} />
+                </div>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                  <PriceDisplay cents={order.totalCents} />
+                  <span>
+                    {new Date(order.createdAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
             </Link>
           ))}
         </div>

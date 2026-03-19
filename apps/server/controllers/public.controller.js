@@ -3,6 +3,7 @@
 const config = require('../config');
 const { select } = require('../lib/supabase');
 const { mapProduct, mapCategory, mapWorkspace, mapShop } = require('../lib/case');
+const platformBannerModel = require('../models/platform-banner.model');
 const { pointInPolygon, getEffectiveGeofence, haversineKm } = require('../lib/geo');
 
 async function healthCheck(req, res) {
@@ -211,6 +212,46 @@ async function shopDeliveryCheck(req, res, next) {
   }
 }
 
+async function resolveTheme(req, res, next) {
+  try {
+    const platformThemeModel = require('../models/platform-theme.model');
+    const { app, ref } = req.query;
+    if (!app) return res.status(400).json({ error: 'app query param is required' });
+
+    let workspaceId = null;
+    if (ref) {
+      const workspaces = await select('workspaces', { filters: { project_ref: ref }, limit: 1 });
+      workspaceId = workspaces?.[0]?.id || null;
+    }
+
+    const theme = await platformThemeModel.resolve(app, workspaceId);
+    if (!theme) return res.status(204).end();
+    return res.json(theme);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function listActiveBanners(req, res, next) {
+  try {
+    const rows = await platformBannerModel.listActive();
+    const banners = (rows || []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      subtitle: r.subtitle,
+      ctaText: r.cta_text,
+      ctaLink: r.cta_link,
+      imageUrl: r.image_url,
+      bgGradient: r.bg_gradient,
+      textColor: r.text_color,
+      sortOrder: r.sort_order,
+    }));
+    return res.json({ banners });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   healthCheck,
   publicRead,
@@ -221,4 +262,6 @@ module.exports = {
   geocode,
   deliveryCheck,
   shopDeliveryCheck,
+  resolveTheme,
+  listActiveBanners,
 };

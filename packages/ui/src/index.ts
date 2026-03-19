@@ -20,5 +20,9 @@ export { EmptyState } from "./components/empty-state";
 export { LoadingScreen } from "./components/loading-screen";
 export { PriceDisplay } from "./components/price-display";
 
+// Providers
+export { DynamicThemeProvider } from "./providers/dynamic-theme-provider";
+export { ThemeToggle } from "./components/theme-toggle";
+
 // Utilities
 export { cn, formatPrice } from "./lib/utils";

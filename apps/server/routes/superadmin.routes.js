@@ -32,4 +32,15 @@ router.get('/orders', controller.listOrders);
 // Stats
 router.get('/stats', controller.getStats);
 
+// Themes
+router.get('/themes', controller.listThemes);
+router.put('/themes', validate(v.upsertThemeSchema), controller.upsertTheme);
+router.delete('/themes/:id', controller.deleteTheme);
+
+// Banners
+router.get('/banners', controller.listBanners);
+router.post('/banners', validate(v.createBannerSchema), controller.createBanner);
+router.patch('/banners/:id', validate(v.updateBannerSchema), controller.updateBanner);
+router.delete('/banners/:id', controller.deleteBanner);
+
 module.exports = router;

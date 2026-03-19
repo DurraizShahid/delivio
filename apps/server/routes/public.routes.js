@@ -8,6 +8,12 @@ const router = Router();
 router.get('/health',             publicController.healthCheck);
 router.get('/geocode',            publicController.geocode);
 
+// Theme resolution (no auth, must be before parametric :ref routes)
+router.get('/public/theme', publicController.resolveTheme);
+
+// Active promotional banners (no auth)
+router.get('/public/banners', publicController.listActiveBanners);
+
 // Shop-scoped public routes
 router.get('/public/:ref/shops',                          publicController.listShops);
 router.get('/public/:ref/shops/:shopId',                  publicController.shopDetail);

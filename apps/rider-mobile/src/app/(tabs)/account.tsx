@@ -2,14 +2,24 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/auth-store";
+import { useAppTheme } from "@/providers/theme-provider";
 import { api } from "@/lib/api";
-import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { spacing, fontSize, borderRadius } from "@/lib/theme";
+import type { ThemeMode } from "@/stores/theme-store";
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "light", label: "Light", icon: "sunny-outline" },
+  { value: "dark", label: "Dark", icon: "moon-outline" },
+  { value: "system", label: "System", icon: "phone-portrait-outline" },
+];
 
 export default function AccountScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { colors, mode, setMode } = useAppTheme();
 
   const { data: tipsData } = useQuery({
     queryKey: ["tips", "rider", user?.id],
@@ -81,6 +91,44 @@ export default function AccountScreen() {
           }
           last
         />
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.rowLabel, { marginBottom: spacing.sm }]}>Appearance</Text>
+        <View style={{ flexDirection: "row", gap: spacing.sm }}>
+          {THEME_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => setMode(opt.value)}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                paddingVertical: spacing.md,
+                borderRadius: borderRadius.md,
+                backgroundColor: mode === opt.value ? colors.primary : colors.muted,
+              }}
+            >
+              <Ionicons
+                name={opt.icon}
+                size={16}
+                color={mode === opt.value ? colors.primaryForeground : colors.mutedForeground}
+              />
+              <Text
+                style={{
+                  fontSize: fontSize.sm,
+                  fontWeight: "600",
+                  color: mode === opt.value ? colors.primaryForeground : colors.mutedForeground,
+                }}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <TouchableOpacity

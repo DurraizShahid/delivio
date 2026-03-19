@@ -7,7 +7,7 @@ import { PackageCheck, Bike, Clock, MessageCircle, User, MapPin } from "lucide-r
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRiderAvailabilityLocation } from "@/hooks/use-rider-availability";
-import { Skeleton, cn } from "@delivio/ui";
+import { Skeleton, cn, ThemeToggle } from "@delivio/ui";
 
 const navItems = [
   { href: "/", label: "Available", icon: PackageCheck },
@@ -71,15 +71,18 @@ export default function MainLayout({
                   </div>
                 </div>
               </div>
-              <Link
-                href="/account"
-                className={cn(
-                  "rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                  pathname.startsWith("/account") && "bg-accent text-foreground"
-                )}
-              >
-                Account
-              </Link>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Link
+                  href="/account"
+                  className={cn(
+                    "rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                    pathname.startsWith("/account") && "bg-accent text-foreground"
+                  )}
+                >
+                  Account
+                </Link>
+              </div>
             </div>
           </header>
 

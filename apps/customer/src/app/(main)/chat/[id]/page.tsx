@@ -4,18 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Input,
-  Skeleton,
-  Avatar,
-  AvatarFallback,
-} from "@delivio/ui";
-import { cn } from "@delivio/ui";
+import { Button, Input, Skeleton, Avatar, AvatarFallback, cn } from "@delivio/ui";
 import { useMessages } from "@/hooks/use-chat";
 import { useAuthStore } from "@/stores/auth-store";
-import { useWSEvent } from "@/providers/ws-provider";
-import { useWS } from "@/providers/ws-provider";
+import { useWSEvent, useWS } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
 
 export default function ChatPage() {
@@ -30,6 +22,7 @@ export default function ChatPage() {
       router.replace("/login");
     }
   }, [isAuthenticated, authLoading, router]);
+
   const { data: messages, isLoading } = useMessages(conversationId);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -49,10 +42,10 @@ export default function ChatPage() {
 
   if (authLoading) {
     return (
-      <div className="mx-auto max-w-md space-y-3 px-4 pt-6">
-        <Skeleton className="h-10 w-full rounded-lg" />
-        <Skeleton className="h-10 w-2/3 rounded-lg" />
-        <Skeleton className="h-10 w-3/4 rounded-lg" />
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-8 lg:px-8">
+        <Skeleton className="h-10 w-full rounded-xl" />
+        <Skeleton className="h-10 w-2/3 rounded-xl" />
+        <Skeleton className="h-10 w-3/4 rounded-xl" />
       </div>
     );
   }
@@ -85,21 +78,25 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <div className="border-b border-border px-4 py-3">
+    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3 lg:px-8">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="flex size-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Go back"
         >
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" />
         </button>
+        <h2 className="font-semibold">Chat</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-8">
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-10 w-2/3 rounded-lg" />
+              <Skeleton key={i} className="h-10 w-2/3 rounded-xl" />
             ))}
           </div>
         ) : (
@@ -123,7 +120,7 @@ export default function ChatPage() {
                   )}
                   <div
                     className={cn(
-                      "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
+                      "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                       isMe
                         ? "rounded-br-sm bg-primary text-primary-foreground"
                         : "rounded-bl-sm bg-muted"
@@ -139,9 +136,10 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Input */}
       <form
         onSubmit={handleSend}
-        className="flex items-center gap-2 border-t border-border px-4 py-3"
+        className="flex items-center gap-2 border-t border-border/50 px-4 py-3 lg:px-8"
       >
         <Input
           value={text}
@@ -150,10 +148,14 @@ export default function ChatPage() {
             handleTyping();
           }}
           placeholder="Type a message..."
-          className="flex-1"
+          className="flex-1 rounded-xl"
           autoFocus
         />
-        <Button size="icon" disabled={!text.trim() || sending}>
+        <Button
+          size="icon"
+          disabled={!text.trim() || sending}
+          className="rounded-xl"
+        >
           {sending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (

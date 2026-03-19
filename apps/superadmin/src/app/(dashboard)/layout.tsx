@@ -12,8 +12,10 @@ import {
   ClipboardList,
   LogOut,
   Shield,
+  Palette,
+  Megaphone,
 } from "lucide-react";
-import { Button, Skeleton, cn } from "@delivio/ui";
+import { Button, Skeleton, cn, ThemeToggle } from "@delivio/ui";
 import { useAuthStore } from "@/stores/auth-store";
 
 const navItems = [
@@ -23,6 +25,8 @@ const navItems = [
   { href: "/shops", label: "Shops", icon: Store },
   { href: "/customers", label: "Customers", icon: UserCircle },
   { href: "/orders", label: "Orders", icon: ClipboardList },
+  { href: "/themes", label: "Themes", icon: Palette },
+  { href: "/banners", label: "Banners", icon: Megaphone },
 ];
 
 export default function DashboardLayout({
@@ -121,15 +125,18 @@ export default function DashboardLayout({
                   {currentNav?.label ?? "Dashboard"}
                 </h1>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground"
-                onClick={() => { logout(); router.replace("/login"); }}
-              >
-                <LogOut className="size-3.5" />
-                <span className="hidden sm:inline">Sign out</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2 text-muted-foreground"
+                  onClick={() => { logout(); router.replace("/login"); }}
+                >
+                  <LogOut className="size-3.5" />
+                  <span className="hidden sm:inline">Sign out</span>
+                </Button>
+              </div>
             </div>
           </header>
 

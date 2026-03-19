@@ -14,6 +14,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRiderAvailabilityLocation } from "@/lib/use-rider-availability";
+import { AppThemeProvider, useAppTheme } from "@/providers/theme-provider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,6 +28,11 @@ function applyDefaultFont() {
   (Text as any).defaultProps = { ...textProps, style: [style, textProps.style] };
   const inputProps = (TextInput as any).defaultProps || {};
   (TextInput as any).defaultProps = { ...inputProps, style: [style, inputProps.style] };
+}
+
+function ThemedStatusBar() {
+  const { isDark } = useAppTheme();
+  return <StatusBar style={isDark ? "light" : "dark"} />;
 }
 
 export default function RootLayout() {
@@ -74,8 +80,10 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <AppThemeProvider>
+        <ThemedStatusBar />
+        <Stack screenOptions={{ headerShown: false }} />
+      </AppThemeProvider>
     </QueryClientProvider>
   );
 }

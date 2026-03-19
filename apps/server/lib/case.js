@@ -82,4 +82,17 @@ function mapRiderGeofence(row) {
   };
 }
 
-module.exports = { mapProduct, mapCategory, mapWorkspace, mapShop, mapRiderGeofence };
+function mapPlatformTheme(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    appTarget: row.app_target ?? row.appTarget,
+    workspaceId: row.workspace_id ?? row.workspaceId ?? null,
+    lightTheme: typeof row.light_theme === 'string' ? JSON.parse(row.light_theme) : (row.light_theme ?? row.lightTheme),
+    darkTheme: typeof row.dark_theme === 'string' ? JSON.parse(row.dark_theme) : (row.dark_theme ?? row.darkTheme),
+    createdAt: row.created_at ?? row.createdAt,
+    updatedAt: row.updated_at ?? row.updatedAt,
+  };
+}
+
+module.exports = { mapProduct, mapCategory, mapWorkspace, mapShop, mapRiderGeofence, mapPlatformTheme };

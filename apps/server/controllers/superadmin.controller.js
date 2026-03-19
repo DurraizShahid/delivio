@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const { select, insert, update, supabaseFetch } = require('../lib/supabase');
 const userModel = require('../models/user.model');
 const shopModel = require('../models/shop.model');
+const platformThemeModel = require('../models/platform-theme.model');
+const platformBannerModel = require('../models/platform-banner.model');
 const { mapWorkspace, mapShop } = require('../lib/case');
 
 // ─── Workspaces ──────────────────────────────────────────────────────────────
@@ -258,6 +260,117 @@ async function getStats(req, res, next) {
   }
 }
 
+// ─── Themes ──────────────────────────────────────────────────────────────────
+
+function mapTheme(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    appTarget: row.app_target,
+    workspaceId: row.workspace_id || null,
+    lightTheme: typeof row.light_theme === 'string' ? JSON.parse(row.light_theme) : row.light_theme,
+    darkTheme: typeof row.dark_theme === 'string' ? JSON.parse(row.dark_theme) : row.dark_theme,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function listThemes(req, res, next) {
+  try {
+    const { workspaceId } = req.query;
+    let rows;
+    if (workspaceId) {
+      rows = await platformThemeModel.list(workspaceId);
+    } else {
+      rows = await platformThemeModel.listPlatformLevel();
+    }
+    return res.json({ themes: (rows || []).map(mapTheme) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function upsertTheme(req, res, next) {
+  try {
+    const { appTarget, workspaceId, lightTheme, darkTheme } = req.body;
+    const row = await platformThemeModel.upsert(appTarget, workspaceId || null, lightTheme, darkTheme);
+    return res.json({ theme: mapTheme(row) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteTheme(req, res, next) {
+  try {
+    const { id } = req.params;
+    await platformThemeModel.deleteById(id);
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Banners ─────────────────────────────────────────────────────────────────
+
+function mapBanner(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    title: row.title,
+    subtitle: row.subtitle,
+    ctaText: row.cta_text,
+    ctaLink: row.cta_link,
+    imageUrl: row.image_url,
+    bgGradient: row.bg_gradient,
+    textColor: row.text_color,
+    sortOrder: row.sort_order,
+    isActive: row.is_active,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function listBanners(req, res, next) {
+  try {
+    const rows = await platformBannerModel.listAll();
+    return res.json({ banners: (rows || []).map(mapBanner) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function createBanner(req, res, next) {
+  try {
+    const row = await platformBannerModel.createBanner(req.body);
+    return res.status(201).json({ banner: mapBanner(row) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateBanner(req, res, next) {
+  try {
+    const { id } = req.params;
+    const row = await platformBannerModel.updateBanner(id, req.body);
+    if (!row) return res.status(404).json({ error: 'Banner not found' });
+    return res.json({ banner: mapBanner(row) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteBanner(req, res, next) {
+  try {
+    const { id } = req.params;
+    await platformBannerModel.deleteById(id);
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   listWorkspaces,
   createWorkspace,
@@ -272,4 +385,11 @@ module.exports = {
   listCustomers,
   listOrders,
   getStats,
+  listThemes,
+  upsertTheme,
+  deleteTheme,
+  listBanners,
+  createBanner,
+  updateBanner,
+  deleteBanner,
 };

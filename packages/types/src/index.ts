@@ -395,6 +395,69 @@ export type WSEvent =
   | WSChatRead
   | WSChatTyping;
 
+// ─── Platform Themes ──────────────────────────────────────────────────────────
+
+export type AppTarget =
+  | "global"
+  | "customer_web"
+  | "rider_web"
+  | "vendor_web"
+  | "superadmin_web"
+  | "customer_mobile"
+  | "rider_mobile"
+  | "vendor_mobile";
+
+export interface ThemeColors {
+  primary?: string;
+  primaryForeground?: string;
+  secondary?: string;
+  secondaryForeground?: string;
+  accent?: string;
+  accentForeground?: string;
+  background?: string;
+  foreground?: string;
+  muted?: string;
+  mutedForeground?: string;
+  destructive?: string;
+  card?: string;
+  cardForeground?: string;
+  border?: string;
+}
+
+export interface PlatformTheme {
+  id: string;
+  appTarget: AppTarget;
+  workspaceId: string | null;
+  lightTheme: ThemeColors;
+  darkTheme: ThemeColors;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ResolvedTheme {
+  light: ThemeColors;
+  dark: ThemeColors;
+}
+
+// ─── Platform Banners ─────────────────────────────────────────────────────────
+
+export interface PlatformBanner {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  ctaText?: string | null;
+  ctaLink?: string | null;
+  imageUrl?: string | null;
+  bgGradient: string;
+  textColor: string;
+  sortOrder: number;
+  isActive: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Superadmin ───────────────────────────────────────────────────────────────
 
 export interface Superadmin {

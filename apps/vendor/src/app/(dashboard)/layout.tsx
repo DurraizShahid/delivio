@@ -12,7 +12,7 @@ import {
   LogOut,
   Store,
 } from "lucide-react";
-import { Button, Skeleton, cn } from "@delivio/ui";
+import { Button, Skeleton, cn, ThemeToggle } from "@delivio/ui";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { ShopSelector } from "@/components/shop-selector";
@@ -130,15 +130,18 @@ export default function DashboardLayout({
                   </div>
                   <ShopSelector />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2 text-muted-foreground"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="size-3.5" />
-                  <span className="hidden sm:inline">Sign out</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 text-muted-foreground"
+                    onClick={() => logout()}
+                  >
+                    <LogOut className="size-3.5" />
+                    <span className="hidden sm:inline">Sign out</span>
+                  </Button>
+                </div>
               </div>
             </header>
 

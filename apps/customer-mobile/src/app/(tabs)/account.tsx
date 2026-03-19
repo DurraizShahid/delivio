@@ -9,12 +9,21 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuthStore } from "@/stores/auth-store";
-import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
+import { useAppTheme } from "@/providers/theme-provider";
+import { spacing, fontSize, borderRadius } from "@/lib/theme";
+import type { ThemeMode } from "@/stores/theme-store";
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: "light", label: "Light", icon: "sunny-outline" },
+  { value: "dark", label: "Dark", icon: "moon-outline" },
+  { value: "system", label: "System", icon: "phone-portrait-outline" },
+];
 
 export default function AccountScreen() {
   const router = useRouter();
   const customer = useAuthStore((s) => s.customer);
   const logout = useAuthStore((s) => s.logout);
+  const { colors, mode, setMode } = useAppTheme();
 
   function handleLogout() {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -97,8 +106,46 @@ export default function AccountScreen() {
           </View>
         </View>
 
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.infoLabel, { color: colors.mutedForeground, marginBottom: spacing.sm }]}>Appearance</Text>
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            {THEME_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => setMode(opt.value)}
+                activeOpacity={0.7}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  paddingVertical: spacing.md,
+                  borderRadius: borderRadius.md,
+                  backgroundColor: mode === opt.value ? colors.primary : colors.muted,
+                }}
+              >
+                <Ionicons
+                  name={opt.icon}
+                  size={16}
+                  color={mode === opt.value ? colors.primaryForeground : colors.mutedForeground}
+                />
+                <Text
+                  style={{
+                    fontSize: fontSize.sm,
+                    fontWeight: "600",
+                    color: mode === opt.value ? colors.primaryForeground : colors.mutedForeground,
+                  }}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         <TouchableOpacity
-          style={styles.logoutButton}
+          style={[styles.logoutButton, { borderColor: colors.destructive }]}
           onPress={handleLogout}
           activeOpacity={0.8}
         >

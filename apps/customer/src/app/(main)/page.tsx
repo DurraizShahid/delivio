@@ -1,18 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
-import { Search, MapPin, Store, LocateFixed } from "lucide-react";
+import { useState, useMemo } from "react";
+import { LocateFixed, Store, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Input,
-  Card,
-  CardContent,
-  Skeleton,
-  EmptyState,
-  Button,
-} from "@delivio/ui";
+import { Skeleton } from "@delivio/ui";
 import { api } from "@/lib/api";
+import { useLocationStore } from "@/stores/location-store";
+import { HeroBanner } from "@/components/hero-banner";
+import { CategoryFilter } from "@/components/category-filter";
+import { RestaurantCard } from "@/components/restaurant-card";
+import { PromoBanner } from "@/components/promo-banner";
 import type { Shop } from "@delivio/types";
 
 const DEMO_REFS = (
@@ -25,39 +22,15 @@ const DEMO_REFS = (
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
-  const [customerLat, setCustomerLat] = useState<number | null>(null);
-  const [customerLon, setCustomerLon] = useState<number | null>(null);
-  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationStatus("denied");
-      return;
-    }
-    setLocationStatus("loading");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setCustomerLat(pos.coords.latitude);
-        setCustomerLon(pos.coords.longitude);
-        setLocationStatus("granted");
-      },
-      () => {
-        setLocationStatus("denied");
-      },
-      { enableHighAccuracy: false, timeout: 10000 }
-    );
-  }, []);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const { lat, lon, status } = useLocationStore();
 
   const { data: shops, isLoading } = useQuery<Shop[]>({
-    queryKey: ["all-shops", customerLat, customerLon],
+    queryKey: ["all-shops", lat, lon],
     queryFn: async () => {
       const results = await Promise.allSettled(
         DEMO_REFS.map((ref) =>
-          api.public.shops(
-            ref,
-            customerLat ?? undefined,
-            customerLon ?? undefined
-          )
+          api.public.shops(ref, lat ?? undefined, lon ?? undefined)
         )
       );
       return results
@@ -71,119 +44,95 @@ export default function HomePage() {
 
   const filtered = useMemo(() => {
     if (!shops) return [];
-    if (!search.trim()) return shops;
-    const q = search.toLowerCase();
-    return shops.filter(
-      (s) =>
-        s.name?.toLowerCase().includes(q) ||
-        s.description?.toLowerCase().includes(q) ||
-        s.address?.toLowerCase().includes(q)
-    );
+    let list = shops;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q) ||
+          s.description?.toLowerCase().includes(q) ||
+          s.address?.toLowerCase().includes(q)
+      );
+    }
+    return list;
   }, [shops, search]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pt-6">
-      <div className="mb-6 space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">
-          What are you craving?
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Order from restaurants near you
-        </p>
-      </div>
+    <div>
+      {/* Hero */}
+      <HeroBanner searchValue={search} onSearchChange={setSearch} />
 
-      {locationStatus === "denied" && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          <LocateFixed className="size-4 shrink-0" />
-          <span>Enable location access to see restaurants that deliver to your area.</span>
-        </div>
-      )}
+      <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        {/* Location warning */}
+        {status === "denied" && (
+          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-950/30 dark:text-amber-200">
+            <LocateFixed className="size-5 shrink-0" />
+            <div>
+              <p className="font-medium">Enable location access</p>
+              <p className="mt-0.5 text-xs opacity-80">
+                Allow location to see restaurants that deliver to your area.
+              </p>
+            </div>
+          </div>
+        )}
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search shops..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+        {/* Promo banners — only rendered when API returns banners */}
+        <PromoBanner />
 
-      {isLoading || locationStatus === "loading" ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <Skeleton className="h-36 w-full rounded-t-xl" />
-              <CardContent className="pt-4">
-                <Skeleton className="mb-2 h-5 w-2/3" />
-                <Skeleton className="h-4 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<Store />}
-          title="No shops found"
-          description={
-            search
-              ? "Try a different search term"
-              : customerLat
-                ? "No restaurants deliver to your area right now"
-                : "No shops are available right now"
-          }
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((shop) => (
-            <Link
-              key={shop.id}
-              href={`/restaurant/${shop.projectRef}/${shop.id}`}
-            >
-              <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                {shop.bannerUrl ? (
-                  <img
-                    src={shop.bannerUrl}
-                    alt={shop.name}
-                    className="h-36 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-36 items-center justify-center bg-muted">
-                    <Store className="size-10 text-muted-foreground" />
+        {/* Category filter */}
+        <section className="mt-10">
+          <div className="mb-5 flex items-center gap-2">
+            <TrendingUp className="size-5 text-primary" />
+            <h2 className="text-lg font-bold sm:text-xl">
+              {search ? `Results for "${search}"` : "Restaurants near you"}
+            </h2>
+            {shops && (
+              <span className="ml-auto text-sm text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "place" : "places"}
+              </span>
+            )}
+          </div>
+          <CategoryFilter active={activeCategory} onSelect={setActiveCategory} />
+        </section>
+
+        {/* Restaurant grid */}
+        <section className="mt-8 pb-16">
+          {isLoading || status === "loading" ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-2xl border border-border/50">
+                  <Skeleton className="aspect-[16/10] w-full" />
+                  <div className="p-4">
+                    <Skeleton className="mb-2 h-5 w-2/3" />
+                    <Skeleton className="mb-3 h-4 w-full" />
+                    <Skeleton className="h-3 w-1/2" />
                   </div>
-                )}
-                <CardContent className="pt-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold">{shop.name}</h3>
-                      {shop.description && (
-                        <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1">
-                          {shop.description}
-                        </p>
-                      )}
-                    </div>
-                    {shop.logoUrl && (
-                      <img
-                        src={shop.logoUrl}
-                        alt=""
-                        className="size-10 rounded-lg object-cover"
-                      />
-                    )}
-                  </div>
-                  {shop.address && (
-                    <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="size-3" />
-                      <span className="line-clamp-1">
-                        {shop.address}
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex size-20 items-center justify-center rounded-full bg-muted">
+                <Store className="size-10 text-muted-foreground" />
+              </div>
+              <h3 className="mt-5 text-lg font-semibold">No restaurants found</h3>
+              <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                {search
+                  ? "Try a different search term or clear your filters"
+                  : lat
+                    ? "No restaurants deliver to your area right now"
+                    : "No shops are available right now"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((shop) => (
+                <RestaurantCard key={shop.id} shop={shop} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

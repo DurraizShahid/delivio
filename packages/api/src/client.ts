@@ -23,6 +23,11 @@ import type {
   VendorSettings,
   Superadmin,
   User,
+  PlatformTheme,
+  AppTarget,
+  ThemeColors,
+  ResolvedTheme,
+  PlatformBanner,
 } from "@delivio/types";
 
 async function request<T>(
@@ -252,6 +257,8 @@ export interface ApiClient {
     geocode(address: string): Promise<{ lat: number; lon: number }>;
     deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
     shopDeliveryCheck(ref: string, shopId: string, lat: number, lon: number): Promise<DeliveryCheck>;
+    theme(app: string, ref?: string): Promise<ResolvedTheme | null>;
+    banners(): Promise<{ banners: PlatformBanner[] }>;
   };
   superadmin: {
     auth: {
@@ -280,6 +287,17 @@ export interface ApiClient {
     };
     orders: {
       list(params?: { projectRef?: string; status?: string; limit?: number; offset?: number }): Promise<{ orders: Order[] }>;
+    };
+    themes: {
+      list(workspaceId?: string): Promise<{ themes: PlatformTheme[] }>;
+      upsert(params: { appTarget: AppTarget; workspaceId?: string | null; lightTheme: ThemeColors; darkTheme: ThemeColors }): Promise<{ theme: PlatformTheme }>;
+      delete(id: string): Promise<{ ok: boolean }>;
+    };
+    banners: {
+      list(): Promise<{ banners: PlatformBanner[] }>;
+      create(params: Partial<PlatformBanner> & { title: string }): Promise<{ banner: PlatformBanner }>;
+      update(id: string, params: Partial<PlatformBanner>): Promise<{ banner: PlatformBanner }>;
+      delete(id: string): Promise<{ ok: boolean }>;
     };
     stats(): Promise<{ stats: { totalWorkspaces: number; totalShops: number; totalUsers: number; totalCustomers: number; totalOrders: number; totalRevenueCents: number } }>;
   };
@@ -513,6 +531,12 @@ export function createApiClient(baseUrl: string): ApiClient {
         get(`/api/public/${ref}/delivery-check?lat=${lat}&lon=${lon}`),
       shopDeliveryCheck: (ref, shopId, lat, lon) =>
         get(`/api/public/${ref}/shops/${shopId}/delivery-check?lat=${lat}&lon=${lon}`),
+      theme: (app, ref?) => {
+        const qs = new URLSearchParams({ app });
+        if (ref) qs.set("ref", ref);
+        return get<ResolvedTheme>(`/api/public/theme?${qs}`).catch(() => null);
+      },
+      banners: () => get("/api/public/banners"),
     },
     superadmin: {
       auth: {
@@ -572,6 +596,26 @@ export function createApiClient(baseUrl: string): ApiClient {
           const q = qs.toString();
           return get(`/api/superadmin/orders${q ? `?${q}` : ""}`);
         },
+      },
+      themes: {
+        list: (workspaceId) => {
+          const qs = new URLSearchParams();
+          if (workspaceId) qs.set("workspaceId", workspaceId);
+          const q = qs.toString();
+          return get(`/api/superadmin/themes${q ? `?${q}` : ""}`);
+        },
+        upsert: (params) =>
+          request(baseUrl, "/api/superadmin/themes", {
+            method: "PUT",
+            body: JSON.stringify(params),
+          }),
+        delete: (id) => del(`/api/superadmin/themes/${id}`),
+      },
+      banners: {
+        list: () => get("/api/superadmin/banners"),
+        create: (params) => post("/api/superadmin/banners", params),
+        update: (id, params) => patch(`/api/superadmin/banners/${id}`, params),
+        delete: (id) => del(`/api/superadmin/banners/${id}`),
       },
       stats: () => get("/api/superadmin/stats"),
     },
