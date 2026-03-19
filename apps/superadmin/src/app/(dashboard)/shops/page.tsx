@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Store, Plus, Pencil, Loader2, MapPin } from "lucide-react";
+import { Store, Plus, Pencil, Loader2, MapPin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button, Card, CardContent, CardHeader, CardTitle,
@@ -59,6 +59,16 @@ export default function ShopsPage() {
       qc.invalidateQueries({ queryKey: ["sa-shops"] });
     },
     onError: (err: any) => toast.error(err?.body?.error || err?.message || "Failed"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.superadmin.shops.delete(id),
+    onSuccess: () => {
+      toast.success("Shop deleted");
+      qc.invalidateQueries({ queryKey: ["sa-shops"] });
+      qc.invalidateQueries({ queryKey: ["superadmin-stats"] });
+    },
+    onError: (err: any) => toast.error(err?.body?.error || err?.message || "Failed to delete"),
   });
 
   return (
@@ -118,7 +128,40 @@ export default function ShopsPage() {
                   </div>
                   {s.address && <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="size-3" />{s.address}</p>}
                 </div>
-                <Button variant="ghost" size="icon-sm" onClick={() => { setEditingId(s.id); setForm({ projectRef: s.projectRef, name: s.name, slug: s.slug, description: s.description ?? "", address: s.address ?? "", phone: s.phone ?? "" }); window.scrollTo({ top: 0, behavior: "smooth" }); }}><Pencil className="size-3.5" /></Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      setEditingId(s.id);
+                      setForm({ projectRef: s.projectRef, name: s.name, slug: s.slug, description: s.description ?? "", address: s.address ?? "", phone: s.phone ?? "" });
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    disabled={deleteMutation.isPending}
+                    aria-label="Edit shop"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      if (deleteMutation.isPending) return;
+                      if (confirm(`Delete shop "${s.name}"?`)) {
+                        if (editingId === s.id) {
+                          setEditingId(null);
+                          setForm({ projectRef: "", name: "", slug: "", description: "", address: "", phone: "" });
+                        }
+                        deleteMutation.mutate(s.id);
+                      }
+                    }}
+                    aria-label="Delete shop"
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

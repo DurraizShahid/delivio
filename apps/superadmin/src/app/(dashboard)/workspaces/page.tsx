@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Plus, Pencil, Loader2 } from "lucide-react";
+import { Building2, Plus, Pencil, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button, Card, CardContent, CardHeader, CardTitle,
@@ -47,6 +47,21 @@ export default function WorkspacesPage() {
       qc.invalidateQueries({ queryKey: ["sa-workspaces"] });
     },
     onError: (err: any) => toast.error(err?.body?.error || err?.message || "Failed to save"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.superadmin.workspaces.delete(id),
+    onSuccess: () => {
+      toast.success("Workspace deleted");
+      qc.invalidateQueries({ queryKey: ["sa-workspaces"] });
+      qc.invalidateQueries({ queryKey: ["superadmin-stats"] });
+      // Workspace deletion impacts multiple resources across the dashboard.
+      qc.invalidateQueries({ queryKey: ["sa-shops"] });
+      qc.invalidateQueries({ queryKey: ["sa-users"] });
+      qc.invalidateQueries({ queryKey: ["sa-customers"] });
+      qc.invalidateQueries({ queryKey: ["sa-orders"] });
+    },
+    onError: (err: any) => toast.error(err?.body?.error || err?.message || "Failed to delete"),
   });
 
   function startEdit(w: Workspace) {
@@ -98,7 +113,30 @@ export default function WorkspacesPage() {
                   </div>
                   {w.description && <p className="mt-0.5 text-xs text-muted-foreground truncate">{w.description}</p>}
                 </div>
-                <Button variant="ghost" size="icon-sm" onClick={() => startEdit(w)} aria-label="Edit"><Pencil className="size-3.5" /></Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon-sm" onClick={() => startEdit(w)} aria-label="Edit" disabled={deleteMutation.isPending}>
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      if (deleteMutation.isPending) return;
+                      if (confirm(`Delete workspace "${w.name}"?`)) {
+                        if (editingId === w.id) {
+                          setEditingId(null);
+                          setForm({ projectRef: "", name: "", description: "", address: "", phone: "" });
+                        }
+                        deleteMutation.mutate(w.id);
+                      }
+                    }}
+                    aria-label="Delete workspace"
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

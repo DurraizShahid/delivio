@@ -68,6 +68,39 @@ async function updateWorkspace(req, res, next) {
   }
 }
 
+async function deleteWorkspace(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { remove } = require('../lib/supabase');
+
+    const rows = await select('workspaces', { filters: { id }, limit: 1 });
+    const workspace = rows?.[0];
+    if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+
+    // Shops are removed when their workspace is deleted.
+    // Before hard-deleting shops, null-out `shop_id` references to avoid FK restrict failures.
+    const shops = await select('shops', { filters: { project_ref: workspace.project_ref }, select: 'id' });
+    const shopIds = (shops || []).map((s) => s.id).filter(Boolean);
+    if (shopIds.length) {
+      const nullOut = (table) => update(table, { shop_id: null }, { shop_id: shopIds });
+      await Promise.all([
+        nullOut('products'),
+        nullOut('categories'),
+        nullOut('orders'),
+        nullOut('cart_sessions'),
+        nullOut('vendor_settings'),
+      ]);
+    }
+
+    await remove('shops', { project_ref: workspace.project_ref });
+    await remove('workspaces', { id });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 async function listUsers(req, res, next) {
@@ -147,6 +180,10 @@ async function listShops(req, res, next) {
   try {
     const filters = {};
     if (req.query.projectRef) filters.project_ref = req.query.projectRef;
+    // By default, superadmin only lists active shops. This keeps "deleted" shops
+    // (e.g. workspace deletions that deactivate shops) out of the UI.
+    const includeInactive = req.query.includeInactive === 'true';
+    if (!includeInactive) filters.is_active = true;
 
     const rows = await select('shops', {
       filters,
@@ -175,6 +212,29 @@ async function updateShopSA(req, res, next) {
     const updated = await shopModel.updateShop(id, req.body);
     if (!updated) return res.status(404).json({ error: 'Shop not found' });
     return res.json({ shop: mapShop(updated) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteShop(req, res, next) {
+  try {
+    const { id } = req.params;
+    const shop = await shopModel.findById(id);
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+
+    // Hard-delete shop.
+    // Null out `shop_id` references in dependent tables first to avoid FK restrict failures.
+    const { remove } = require('../lib/supabase');
+    await Promise.all([
+      update('products', { shop_id: null }, { shop_id: id }),
+      update('categories', { shop_id: null }, { shop_id: id }),
+      update('orders', { shop_id: null }, { shop_id: id }),
+      update('cart_sessions', { shop_id: null }, { shop_id: id }),
+      update('vendor_settings', { shop_id: null }, { shop_id: id }),
+    ]);
+    await remove('shops', { id });
+    return res.json({ ok: true });
   } catch (err) {
     next(err);
   }
@@ -237,7 +297,7 @@ async function getStats(req, res, next) {
   try {
     const [workspaces, shops, users, customers, orders] = await Promise.all([
       select('workspaces', {}),
-      select('shops', {}),
+      select('shops', { filters: { is_active: true } }),
       select('app_users', {}),
       select('customers', {}),
       select('orders', {}),
@@ -375,6 +435,7 @@ module.exports = {
   listWorkspaces,
   createWorkspace,
   updateWorkspace,
+  deleteWorkspace,
   listUsers,
   createUser,
   updateUser,
@@ -382,6 +443,7 @@ module.exports = {
   listShops,
   createShop,
   updateShop: updateShopSA,
+  deleteShop,
   listCustomers,
   listOrders,
   getStats,

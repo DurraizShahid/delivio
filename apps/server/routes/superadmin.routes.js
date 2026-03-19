@@ -11,6 +11,7 @@ const router = Router();
 router.get('/workspaces', controller.listWorkspaces);
 router.post('/workspaces', validate(v.createWorkspaceSchema), controller.createWorkspace);
 router.patch('/workspaces/:id', validate(v.updateWorkspaceSchema), controller.updateWorkspace);
+router.delete('/workspaces/:id', controller.deleteWorkspace);
 
 // Users
 router.get('/users', controller.listUsers);
@@ -22,6 +23,7 @@ router.delete('/users/:id', controller.deleteUser);
 router.get('/shops', controller.listShops);
 router.post('/shops', validate(v.createShopSchema), controller.createShop);
 router.patch('/shops/:id', validate(v.updateShopSchema), controller.updateShop);
+router.delete('/shops/:id', controller.deleteShop);
 
 // Customers
 router.get('/customers', controller.listCustomers);

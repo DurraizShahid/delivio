@@ -277,6 +277,7 @@ export interface ApiClient {
       list(): Promise<{ workspaces: Workspace[] }>;
       create(params: { projectRef: string; name: string; description?: string | null; address?: string | null; phone?: string | null }): Promise<{ workspace: Workspace }>;
       update(id: string, params: Partial<{ name: string; description: string | null; logoUrl: string | null; bannerUrl: string | null; address: string | null; phone: string | null }>): Promise<{ workspace: Workspace }>;
+      delete(id: string): Promise<{ ok: boolean }>;
     };
     users: {
       list(params?: { role?: string; projectRef?: string; limit?: number; offset?: number }): Promise<{ users: User[] }>;
@@ -288,6 +289,7 @@ export interface ApiClient {
       list(params?: { projectRef?: string; limit?: number }): Promise<{ shops: Shop[] }>;
       create(params: { projectRef: string; name: string; slug: string; description?: string | null; address?: string | null; phone?: string | null; lat?: number | null; lon?: number | null }): Promise<{ shop: Shop }>;
       update(id: string, params: Partial<{ name: string; slug: string; description: string | null; address: string | null; phone: string | null; isActive: boolean }>): Promise<{ shop: Shop }>;
+      delete(id: string): Promise<{ ok: boolean }>;
     };
     customers: {
       list(params?: { projectRef?: string; limit?: number; offset?: number }): Promise<{ customers: Customer[] }>;
@@ -559,6 +561,7 @@ export function createApiClient(baseUrl: string): ApiClient {
         list: () => get("/api/superadmin/workspaces"),
         create: (params) => post("/api/superadmin/workspaces", params),
         update: (id, params) => patch(`/api/superadmin/workspaces/${id}`, params),
+        delete: (id) => del(`/api/superadmin/workspaces/${id}`),
       },
       users: {
         list: (params) => {
@@ -584,6 +587,7 @@ export function createApiClient(baseUrl: string): ApiClient {
         },
         create: (params) => post("/api/superadmin/shops", params),
         update: (id, params) => patch(`/api/superadmin/shops/${id}`, params),
+        delete: (id) => del(`/api/superadmin/shops/${id}`),
       },
       customers: {
         list: (params) => {
