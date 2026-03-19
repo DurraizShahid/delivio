@@ -11,6 +11,27 @@ import Link from "next/link";
 
 const PROJECT_REF = process.env.NEXT_PUBLIC_PROJECT_REF || "demo";
 
+function normalizePhoneToE164(input: string) {
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+
+  // Allow users to paste values like "+44 7700 900000" and normalize to "+447700900000".
+  // We only do character normalization here; the final validation is still E.164 strict.
+  const withPlus = trimmed.startsWith("00") ? `+${trimmed.slice(2)}` : trimmed;
+  const digitsAndPlusOnly = withPlus.replace(/[^\d+]/g, "");
+
+  // Keep a single leading "+" if the user included it anywhere.
+  if (digitsAndPlusOnly.includes("+")) {
+    return `+${digitsAndPlusOnly.replace(/\+/g, "")}`;
+  }
+
+  return digitsAndPlusOnly;
+}
+
+function isE164(phone: string) {
+  return /^\+[1-9]\d{6,14}$/.test(phone);
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -31,7 +52,16 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.auth.sendOTP(phone, PROJECT_REF);
+      const normalized = normalizePhoneToE164(phone);
+      if (!isE164(normalized)) {
+        toast.error("Enter phone in international format (E.164), e.g. +447700900000");
+        return;
+      }
+
+      // Keep state consistent so OTP verify uses the same normalized phone.
+      setPhone(normalized);
+
+      await api.auth.sendOTP(normalized, PROJECT_REF);
       setStep("otp");
       toast.success("OTP sent to your phone");
     } catch (err: unknown) {
@@ -137,7 +167,7 @@ export default function LoginPage() {
                     <Input
                       id="customer-phone"
                       type="tel"
-                      placeholder="+44 7700 900000"
+                      placeholder="+447700900000"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="rounded-xl pl-10"

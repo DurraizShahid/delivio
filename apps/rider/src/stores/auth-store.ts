@@ -11,7 +11,7 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -26,10 +26,21 @@ export const useAuthStore = create<AuthState>((set) => ({
           isLoading: false,
         });
       } else {
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        // Avoid immediately logging the user out right after a successful login.
+        // There can be a short window where the cookie isn't yet visible to the
+        // subsequent /api/auth/session request.
+        if (get().user) {
+          set({ isLoading: false });
+        } else {
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        }
       }
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      if (get().user) {
+        set({ isLoading: false });
+      } else {
+        set({ user: null, isAuthenticated: false, isLoading: false });
+      }
     }
   },
 

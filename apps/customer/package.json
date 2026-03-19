@@ -26,6 +26,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
+    "react-phone-number-input": "^3.4.16",
     "shadcn": "^4.0.8",
     "sonner": "^2.0.0",
     "tailwind-merge": "^3.5.0",
