@@ -36,6 +36,13 @@ export default function VendorLoginPage() {
     setLoading(true);
     try {
       const result = await api.auth.login(email, password);
+      if ("requiresTwoFactor" in result && result.requiresTwoFactor) {
+        sessionStorage.setItem("delivio-preAuthToken", result.preAuthToken);
+        toast.info("Two-factor authentication required");
+        router.push("/2fa");
+        return;
+      }
+
       setUser(result.user as unknown as User);
       toast.success("Welcome back!");
       router.push("/");

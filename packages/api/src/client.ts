@@ -62,7 +62,14 @@ export interface ApiClient {
       name?: string;
       email?: string;
     }): Promise<{ customer: Customer }>;
-    login(email: string, password: string): Promise<{ user: Customer }>;
+    login(
+      email: string,
+      password: string
+    ): Promise<
+      | { user: Customer }
+      | { requiresTwoFactor: true; preAuthToken: string }
+    >;
+    login2FA(sessionToken: string, totpToken: string): Promise<{ user: Customer }>;
     logout(): Promise<void>;
     getSession(): Promise<{ customer: Customer } | null>;
     getAdminSession(): Promise<{ user: Customer } | null>;
@@ -336,6 +343,8 @@ export function createApiClient(baseUrl: string): ApiClient {
       verifyOTP: (params) => post("/api/auth/otp/verify", params),
       login: (email, password) =>
         post("/api/auth/login", { email, password }),
+      login2FA: (sessionToken, totpToken) =>
+        post("/api/auth/2fa/login", { sessionToken, totpToken }),
       logout: () => post("/api/auth/customer/logout"),
       getSession: () =>
         get<{ customer: Customer } | null>("/api/auth/customer/session").catch(
