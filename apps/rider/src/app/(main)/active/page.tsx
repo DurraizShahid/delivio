@@ -25,7 +25,7 @@ import {
 import { cn } from "@delivio/ui";
 import { useActiveDelivery } from "@/hooks/use-deliveries";
 import { api } from "@/lib/api";
-import type { DeliveryStatus } from "@delivio/types";
+import type { Delivery, DeliveryStatus } from "@delivio/types";
 
 const STEPS: { key: DeliveryStatus; label: string; icon: typeof Package }[] = [
   { key: "assigned", label: "Assigned", icon: Package },
@@ -54,6 +54,11 @@ function getNextLabel(current: DeliveryStatus): string {
     arrived: "Complete Delivery",
   };
   return map[current] ?? "Update Status";
+}
+
+function getPickupLabel(delivery: Delivery): string {
+  if (delivery.zoneId) return `Zone ${delivery.zoneId}`;
+  return "Restaurant pickup point";
 }
 
 export default function ActiveDeliveryPage() {
@@ -94,17 +99,25 @@ export default function ActiveDeliveryPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-md px-4 pt-6">
-        <h1 className="mb-4 text-2xl font-bold">Active Delivery</h1>
-        <Skeleton className="h-64 w-full rounded-lg" />
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
+          <p className="text-sm text-muted-foreground">Preparing your current mission...</p>
+        </div>
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
   }
 
   if (!delivery) {
     return (
-      <div className="mx-auto max-w-md px-4 pt-6">
-        <h1 className="mb-4 text-2xl font-bold">Active Delivery</h1>
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
+          <p className="text-sm text-muted-foreground">
+            You are currently not handling an order.
+          </p>
+        </div>
         <EmptyState
           icon={<Bike />}
           title="No active delivery"
@@ -118,17 +131,26 @@ export default function ActiveDeliveryPage() {
   const nextStatus = getNextStatus(delivery.status);
 
   return (
-    <div className="mx-auto max-w-md px-4 pt-6">
-      <h1 className="mb-4 text-2xl font-bold">Active Delivery</h1>
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
+            <p className="text-sm text-muted-foreground">
+              Order #{delivery.orderId.slice(0, 8)}
+            </p>
+          </div>
+          <div className="rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+            {delivery.status.replace("_", " ")}
+          </div>
+        </div>
+      </div>
 
-      <Card className="mb-4">
+      <Card className="border-border/70 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">
-            Order #{delivery.orderId.slice(0, 8)}
-          </CardTitle>
+          <CardTitle className="text-base">Delivery Progress</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Status stepper */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
               {STEPS.map((step, idx) => {
@@ -144,7 +166,7 @@ export default function ActiveDeliveryPage() {
                           isCompleted
                             ? "border-primary bg-primary text-primary-foreground"
                             : isCurrent
-                              ? "border-primary bg-background text-primary"
+                              ? "border-primary bg-primary/10 text-primary"
                               : "border-muted bg-muted text-muted-foreground"
                         )}
                       >
@@ -175,29 +197,30 @@ export default function ActiveDeliveryPage() {
             </div>
           </div>
 
-          {/* Delivery details */}
-          <div className="space-y-3 border-t border-border pt-4">
-            <div className="flex items-center gap-3">
-              <MapPin className="size-4 shrink-0 text-muted-foreground" />
-              <span className="text-sm">
-                Pickup: {(delivery as any).shopName || (delivery as any).shopAddress || delivery.zoneId || "Restaurant"}
-              </span>
+          <div className="space-y-2 border-t border-border pt-4">
+            <div className="rounded-xl bg-muted/55 p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <MapPin className="size-3.5" />
+                Pickup
+              </div>
+              <p className="mt-1 text-sm font-medium">{getPickupLabel(delivery)}</p>
             </div>
+
             {delivery.etaMinutes && (
-              <div className="flex items-center gap-3">
-                <Bike className="size-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm">
-                  ETA: ~{delivery.etaMinutes} minutes
-                </span>
+              <div className="rounded-xl bg-muted/55 p-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Bike className="size-3.5" />
+                  Estimated time
+                </div>
+                <p className="mt-1 text-sm font-medium">~{delivery.etaMinutes} minutes</p>
               </div>
             )}
           </div>
 
-          {/* Actions */}
           <div className="mt-6 space-y-2">
             {nextStatus && (
               <Button
-                className="w-full"
+                className="h-11 w-full rounded-lg text-sm font-semibold"
                 onClick={handleUpdateStatus}
                 disabled={updating}
               >
@@ -218,7 +241,7 @@ export default function ActiveDeliveryPage() {
 
             <Button
               variant="outline"
-              className="w-full gap-2"
+              className="h-10 w-full gap-2 rounded-lg"
               onClick={() => router.push("/chat")}
             >
               <MessageCircle className="size-4" />

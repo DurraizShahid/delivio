@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { PackageCheck, Bike, Clock, MessageCircle, User, MapPin } from "lucide-react";
+import {
+  PackageCheck,
+  Bike,
+  Clock,
+  MessageCircle,
+  User,
+  MapPin,
+} from "lucide-react";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRiderAvailabilityLocation } from "@/hooks/use-rider-availability";
@@ -41,11 +48,11 @@ export default function MainLayout({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="space-y-3 w-full max-w-md px-4">
+      <div className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
+        <div className="w-full max-w-lg space-y-3">
           <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-52 w-full rounded-xl" />
+          <Skeleton className="h-36 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -54,20 +61,20 @@ export default function MainLayout({
 
   return (
     <WSProvider>
-      <div className="min-h-screen bg-muted/30">
+      <div className="min-h-screen bg-muted/25">
         <div className="flex min-h-screen flex-col">
-          <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-            <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                  <span className="text-sm font-bold">D</span>
+          <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-lg">
+            <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                  <Bike className="size-4" />
                 </div>
                 <div className="leading-tight">
                   <div className="text-sm font-semibold tracking-tight">
                     Rider
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Availability, deliveries, chat
+                  <div className="text-xs text-muted-foreground/90">
+                    Fast actions, clear workflow
                   </div>
                 </div>
               </div>
@@ -76,24 +83,26 @@ export default function MainLayout({
                 <Link
                   href="/account"
                   className={cn(
-                    "rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                    pathname.startsWith("/account") && "bg-accent text-foreground"
+                    "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground",
+                    pathname.startsWith("/account") &&
+                      "bg-accent text-foreground shadow-sm"
                   )}
                 >
+                  <User className="size-4" />
                   Account
                 </Link>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 pb-16">
-            <div className="mx-auto w-full max-w-lg px-4 py-5">
+          <main className="flex-1 pb-24">
+            <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6">
               {children}
             </div>
           </main>
 
-          <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background">
-            <div className="mx-auto flex max-w-lg items-center justify-around">
+          <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
+            <div className="mx-auto flex max-w-3xl items-center justify-between gap-1 px-2 py-2 sm:px-4">
               {navItems.map(({ href, label, icon: Icon }) => {
                 const isActive =
                   href === "/"
@@ -104,14 +113,14 @@ export default function MainLayout({
                     key={href}
                     href={href}
                     className={cn(
-                      "flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors",
+                      "flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all",
                       isActive
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
                     )}
                   >
-                    <Icon className="size-5" />
-                    <span>{label}</span>
+                    <Icon className="size-4 shrink-0" />
+                    <span className="truncate">{label}</span>
                   </Link>
                 );
               })}

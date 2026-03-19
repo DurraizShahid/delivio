@@ -32,6 +32,7 @@ class PlatformBannerModel extends BaseModel {
       cta_text: data.ctaText || null,
       cta_link: data.ctaLink || null,
       image_url: data.imageUrl || null,
+      image_scale: data.imageScale ?? 100,
       bg_gradient: data.bgGradient || 'from-primary to-primary/80',
       text_color: data.textColor || '#ffffff',
       sort_order: data.sortOrder ?? 0,
@@ -50,6 +51,7 @@ class PlatformBannerModel extends BaseModel {
     if (data.ctaText !== undefined) patch.cta_text = data.ctaText;
     if (data.ctaLink !== undefined) patch.cta_link = data.ctaLink;
     if (data.imageUrl !== undefined) patch.image_url = data.imageUrl;
+    if (data.imageScale !== undefined) patch.image_scale = data.imageScale;
     if (data.bgGradient !== undefined) patch.bg_gradient = data.bgGradient;
     if (data.textColor !== undefined) patch.text_color = data.textColor;
     if (data.sortOrder !== undefined) patch.sort_order = data.sortOrder;

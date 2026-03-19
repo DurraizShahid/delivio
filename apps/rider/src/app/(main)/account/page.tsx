@@ -38,10 +38,15 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 pt-6">
-      <h1 className="mb-4 text-2xl font-bold">Account</h1>
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight">Account</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage your rider profile and access details.
+        </p>
+      </div>
 
-      <Card>
+      <Card className="border-border/70 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Profile</CardTitle>
         </CardHeader>
@@ -62,11 +67,11 @@ export default function AccountPage() {
         </CardContent>
       </Card>
 
-      <Separator className="my-4" />
+      <Separator className="my-1" />
 
       <Button
         variant="destructive"
-        className="w-full gap-2"
+        className="h-11 w-full gap-2 rounded-lg"
         onClick={handleLogout}
       >
         <LogOut className="size-4" />

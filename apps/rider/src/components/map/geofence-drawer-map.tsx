@@ -121,6 +121,10 @@ export default function GeofenceDrawerMap({
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          // In strict mode, geolocation can resolve after this map instance is removed.
+          // Only update view when this exact instance is still mounted and attached.
+          if (mapRef.current !== map) return;
+          if (!map.getContainer()?.isConnected) return;
           if (!geofence?.coordinates?.[0]?.length) {
             map.setView([pos.coords.latitude, pos.coords.longitude], DEFAULT_ZOOM);
           }
@@ -132,7 +136,7 @@ export default function GeofenceDrawerMap({
     mapRef.current = map;
     drawnItemsRef.current = drawnItems;
     setReady(true);
-  }, []);
+  }, [geofence, onGeofenceChange]);
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl;

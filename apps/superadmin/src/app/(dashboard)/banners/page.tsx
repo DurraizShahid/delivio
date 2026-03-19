@@ -49,6 +49,7 @@ const emptyForm = {
   ctaText: "",
   ctaLink: "",
   imageUrl: "",
+  imageScale: 100,
   bgGradient: "from-orange-500 to-rose-500",
   textColor: "#ffffff",
   sortOrder: 0,
@@ -94,6 +95,7 @@ export default function BannersPage() {
         ctaText: form.ctaText.trim() || null,
         ctaLink: form.ctaLink.trim() || null,
         imageUrl: form.imageUrl.trim() || null,
+        imageScale: form.imageScale,
         bgGradient: form.bgGradient,
         textColor: form.textColor,
         sortOrder: form.sortOrder,
@@ -148,6 +150,7 @@ export default function BannersPage() {
       ctaText: b.ctaText ?? "",
       ctaLink: b.ctaLink ?? "",
       imageUrl: b.imageUrl ?? "",
+      imageScale: b.imageScale ?? 100,
       bgGradient: b.bgGradient,
       textColor: b.textColor,
       sortOrder: b.sortOrder,
@@ -321,6 +324,29 @@ export default function BannersPage() {
                     onChange={(e) => patch({ imageUrl: e.target.value })}
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
+                    <label>Image Scale</label>
+                    <span>{form.imageScale}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={50}
+                    max={200}
+                    step={5}
+                    value={form.imageScale}
+                    onChange={(e) =>
+                      patch({ imageScale: parseInt(e.target.value, 10) || 100 })
+                    }
+                    className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
+                    disabled={!form.imageUrl.trim()}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.imageUrl.trim()
+                      ? "Increase scale to zoom in, decrease to zoom out."
+                      : "Add an image URL to enable scaling."}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -391,6 +417,7 @@ export default function BannersPage() {
                 bgGradient={form.bgGradient}
                 textColor={form.textColor}
                 imageUrl={form.imageUrl}
+                imageScale={form.imageScale}
               />
             </div>
 
@@ -451,7 +478,7 @@ export default function BannersPage() {
                       b.imageUrl
                         ? {
                             backgroundImage: `url(${b.imageUrl})`,
-                            backgroundSize: "cover",
+                            backgroundSize: `${b.imageScale ?? 100}%`,
                             backgroundPosition: "center",
                           }
                         : undefined
@@ -560,6 +587,7 @@ function BannerPreview({
   bgGradient,
   textColor,
   imageUrl,
+  imageScale,
 }: {
   title: string;
   subtitle: string;
@@ -567,6 +595,7 @@ function BannerPreview({
   bgGradient: string;
   textColor: string;
   imageUrl: string;
+  imageScale: number;
 }) {
   return (
     <div
@@ -578,7 +607,7 @@ function BannerPreview({
         imageUrl
           ? {
               backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${imageUrl})`,
-              backgroundSize: "cover",
+              backgroundSize: `cover, ${imageScale}%`,
               backgroundPosition: "center",
             }
           : undefined

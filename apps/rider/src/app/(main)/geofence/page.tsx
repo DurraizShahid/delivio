@@ -49,16 +49,16 @@ export default function RiderGeofencePage() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pt-6">
+    <div className="space-y-4">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Delivery Zone</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Delivery Zone</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Draw the area you want to deliver in
+            Draw where you want to receive delivery requests.
           </p>
         </div>
         <Button
-          className="gap-2 shrink-0"
+          className="shrink-0 gap-2 rounded-lg"
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending || !hasChanges}
         >
@@ -74,15 +74,15 @@ export default function RiderGeofencePage() {
       {isLoading ? (
         <Skeleton className="h-[500px] w-full rounded-xl" />
       ) : (
-        <Card className="shadow-sm border-border/60">
+        <Card className="border-border/70 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <MapPin className="size-4" />
               Your Delivery Zone
             </CardTitle>
             <CardDescription>
-              Use the polygon tool in the top-right corner to draw the area where you accept deliveries.
-              You will only receive orders from shops whose delivery zone overlaps yours.
+              Use the polygon tool to draw your active area. You only receive
+              requests from shops whose delivery zone overlaps with yours.
             </CardDescription>
           </CardHeader>
           <CardContent>

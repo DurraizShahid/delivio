@@ -381,6 +381,7 @@ function mapBanner(row) {
     ctaText: row.cta_text,
     ctaLink: row.cta_link,
     imageUrl: row.image_url,
+    imageScale: row.image_scale ?? 100,
     bgGradient: row.bg_gradient,
     textColor: row.text_color,
     sortOrder: row.sort_order,

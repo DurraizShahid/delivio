@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, MessageCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -67,21 +67,27 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <div className="border-b border-border px-4 py-3">
-        <button
+    <div className="flex h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="gap-1 rounded-lg px-2"
         >
           <ArrowLeft className="size-4" /> Back
-        </button>
+        </Button>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MessageCircle className="size-3.5" />
+          Live chat
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto bg-muted/25 px-4 py-4">
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-10 w-2/3 rounded-lg" />
+              <Skeleton key={i} className="h-12 w-2/3 rounded-xl" />
             ))}
           </div>
         ) : (
@@ -105,10 +111,10 @@ export default function ChatPage() {
                   )}
                   <div
                     className={cn(
-                      "max-w-[75%] rounded-2xl px-3 py-2 text-sm",
+                      "max-w-[78%] rounded-2xl px-3 py-2.5 text-sm shadow-sm",
                       isMe
                         ? "rounded-br-sm bg-primary text-primary-foreground"
-                        : "rounded-bl-sm bg-muted"
+                        : "rounded-bl-sm border border-border/70 bg-background"
                     )}
                   >
                     {msg.content}
@@ -123,7 +129,7 @@ export default function ChatPage() {
 
       <form
         onSubmit={handleSend}
-        className="flex items-center gap-2 border-t border-border px-4 py-3"
+        className="flex items-center gap-2 border-t border-border/80 bg-background px-4 py-3"
       >
         <Input
           value={text}
@@ -132,10 +138,10 @@ export default function ChatPage() {
             handleTyping();
           }}
           placeholder="Type a message..."
-          className="flex-1"
+          className="h-10 flex-1 rounded-lg"
           autoFocus
         />
-        <Button size="icon" disabled={!text.trim() || sending}>
+        <Button size="icon" className="rounded-lg" disabled={!text.trim() || sending}>
           {sending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (

@@ -448,6 +448,7 @@ export interface PlatformBanner {
   ctaText?: string | null;
   ctaLink?: string | null;
   imageUrl?: string | null;
+  imageScale?: number;
   bgGradient: string;
   textColor: string;
   sortOrder: number;

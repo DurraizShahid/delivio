@@ -279,6 +279,7 @@ async function listActiveBanners(req, res, next) {
       ctaText: r.cta_text,
       ctaLink: r.cta_link,
       imageUrl: r.image_url,
+      imageScale: r.image_scale ?? 100,
       bgGradient: r.bg_gradient,
       textColor: r.text_color,
       sortOrder: r.sort_order,

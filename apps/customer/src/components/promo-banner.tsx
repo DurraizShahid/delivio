@@ -35,6 +35,8 @@ export function PromoBanner() {
             b.imageUrl
               ? {
                   backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${b.imageUrl})`,
+                  backgroundSize: `cover, ${b.imageScale ?? 100}%`,
+                  backgroundPosition: "center",
                 }
               : undefined
           }
