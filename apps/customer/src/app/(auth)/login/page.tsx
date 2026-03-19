@@ -46,6 +46,7 @@ export default function LoginPage() {
 
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [debugOtp, setDebugOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSendOTP(e: React.FormEvent) {
@@ -61,9 +62,12 @@ export default function LoginPage() {
       // Keep state consistent so OTP verify uses the same normalized phone.
       setPhone(normalized);
 
-      await api.auth.sendOTP(normalized, PROJECT_REF);
+      const result = await api.auth.sendOTP(normalized, PROJECT_REF);
+      const nextDebugOtp = result.debugOtp ?? null;
+      setDebugOtp(nextDebugOtp);
+      setCode(nextDebugOtp ?? "");
       setStep("otp");
-      toast.success("OTP sent to your phone");
+      toast.success(nextDebugOtp ? "Dev OTP generated (shown on screen)" : "OTP sent to your phone");
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "message" in err
@@ -198,6 +202,14 @@ export default function LoginPage() {
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div className="space-y-2">
+                  {debugOtp ? (
+                    <div className="rounded-xl bg-muted/50 p-3 text-center text-xs text-muted-foreground">
+                      Dev OTP (local only):{" "}
+                      <span className="font-mono text-sm tracking-widest text-foreground">
+                        {debugOtp}
+                      </span>
+                    </div>
+                  ) : null}
                   <label
                     className="text-sm font-medium"
                     htmlFor="customer-otp"
@@ -240,6 +252,7 @@ export default function LoginPage() {
                   onClick={() => {
                     setStep("phone");
                     setCode("");
+                    setDebugOtp(null);
                   }}
                   className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >

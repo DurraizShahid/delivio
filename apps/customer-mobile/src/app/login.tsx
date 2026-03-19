@@ -36,8 +36,17 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      await api.auth.sendOTP(`+${cleaned}`, PROJECT_REF);
+      const result = await api.auth.sendOTP(`+${cleaned}`, PROJECT_REF);
+      const nextDebugOtp = result.debugOtp ?? null;
+
       setStep("otp");
+      if (nextDebugOtp) {
+        const digits = nextDebugOtp.replace(/\D/g, "").slice(0, 6).split("");
+        setOtp([digits[0] || "", digits[1] || "", digits[2] || "", digits[3] || "", digits[4] || "", digits[5] || ""]);
+        Alert.alert("Dev OTP (local only)", nextDebugOtp);
+      } else {
+        setOtp(["", "", "", "", "", ""]);
+      }
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to send OTP");
     } finally {

@@ -155,12 +155,43 @@ async function sendOTP(req, res, next) {
     const code = generateOTP();
     await sessionService.setOTP(phone, code);
 
-    await sendSMS({
-      to: phone,
-      body: `Your Delivio verification code is: ${code}. It expires in 5 minutes.`,
-    });
+    const smsBody = `Your Delivio verification code is: ${code}. It expires in 5 minutes.`;
 
-    return res.json({ ok: true });
+    // In local/dev we don't want OTP testing blocked by external Twilio issues.
+    // We always store the OTP in the session store; if SMS sending fails (or times out),
+    // we return `debugOtp` to the frontend for testing only.
+    let smsFailed = false;
+    let smsTimedOut = false;
+    const debugAllowed = !config.isProd;
+    const smsTimeoutMs = 5000;
+
+    if (debugAllowed) {
+      // Avoid long hangs when Twilio is unreachable by enforcing a short timeout.
+      let timeoutId = null;
+      const timeoutPromise = new Promise((resolve) => {
+        timeoutId = setTimeout(() => {
+          smsTimedOut = true;
+          resolve(null);
+        }, smsTimeoutMs);
+      });
+
+      const sendPromise = sendSMS({ to: phone, body: smsBody }).catch(() => {
+        smsFailed = true;
+        return null;
+      });
+
+      // If Twilio resolves before the timeout, `smsTimedOut` stays false.
+      await Promise.race([sendPromise, timeoutPromise]);
+      if (timeoutId) clearTimeout(timeoutId);
+    } else {
+      // Production: fail fast so we don't pretend SMS was sent.
+      await sendSMS({ to: phone, body: smsBody });
+    }
+
+    const debugOtp =
+      debugAllowed && (!config.twilio.enabled || smsFailed || smsTimedOut) ? code : undefined;
+
+    return res.json({ ok: true, ...(debugOtp ? { debugOtp } : {}) });
   } catch (err) {
     next(err);
   }

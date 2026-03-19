@@ -54,7 +54,7 @@ async function request<T>(
 
 export interface ApiClient {
   auth: {
-    sendOTP(phone: string, projectRef: string): Promise<{ message: string }>;
+    sendOTP(phone: string, projectRef: string): Promise<{ ok: boolean; debugOtp?: string }>;
     verifyOTP(params: {
       phone: string;
       code: string;
@@ -339,7 +339,7 @@ export function createApiClient(baseUrl: string): ApiClient {
   return {
     auth: {
       sendOTP: (phone, projectRef) =>
-        post("/api/auth/otp/send", { phone, projectRef }),
+        post<{ ok: boolean; debugOtp?: string }>("/api/auth/otp/send", { phone, projectRef }),
       verifyOTP: (params) => post("/api/auth/otp/verify", params),
       login: (email, password) =>
         post("/api/auth/login", { email, password }),
