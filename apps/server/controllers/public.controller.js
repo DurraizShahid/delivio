@@ -151,6 +151,43 @@ async function geocode(req, res, next) {
   }
 }
 
+async function reverseGeocode(req, res, next) {
+  try {
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: 'lat and lon query params are required' });
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${config.google.mapsApiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    // Google often returns a "Plus Code" like `55PQ+39 Gujranwala, Pakistan` at
+    // the start of `formatted_address`. Strip that so the UI shows a cleaner
+    // human-readable address.
+    const PLUS_CODE_PREFIX_RE = /^([0-9A-Z]{4,6}\+[0-9A-Z]{2,4})(?:,)?\s*/i;
+    const stripPlusCodePrefix = (s) => s.replace(PLUS_CODE_PREFIX_RE, "").trim();
+
+    const candidates = (data?.results || [])
+      .map((r) => r?.formatted_address)
+      .filter((a) => typeof a === "string" && a.trim());
+
+    // Prefer an address that doesn't start with a Plus Code. If everything starts
+    // with a Plus Code, strip it as a fallback for nicer UI output.
+    let address =
+      candidates.find((a) => !PLUS_CODE_PREFIX_RE.test(a)) || candidates[0] || null;
+    if (typeof address === "string" && PLUS_CODE_PREFIX_RE.test(address)) {
+      address = stripPlusCodePrefix(address);
+    }
+
+    return res.json({ address: address || null });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function deliveryCheck(req, res, next) {
   try {
     const { ref } = req.params;
@@ -260,6 +297,7 @@ module.exports = {
   shopCategories,
   shopDetail,
   geocode,
+  reverseGeocode,
   deliveryCheck,
   shopDeliveryCheck,
   resolveTheme,

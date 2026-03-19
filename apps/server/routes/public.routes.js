@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/health',             publicController.healthCheck);
 router.get('/geocode',            publicController.geocode);
+router.get('/reverse-geocode',   publicController.reverseGeocode);
 
 // Theme resolution (no auth, must be before parametric :ref routes)
 router.get('/public/theme', publicController.resolveTheme);

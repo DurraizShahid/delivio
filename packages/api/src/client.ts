@@ -262,6 +262,7 @@ export interface ApiClient {
     shopProducts(ref: string, shopId: string): Promise<Product[]>;
     shopCategories(ref: string, shopId: string): Promise<Category[]>;
     geocode(address: string): Promise<{ lat: number; lon: number }>;
+      reverseGeocode(lat: number, lon: number): Promise<{ address: string | null }>;
     deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
     shopDeliveryCheck(ref: string, shopId: string, lat: number, lon: number): Promise<DeliveryCheck>;
     theme(app: string, ref?: string): Promise<ResolvedTheme | null>;
@@ -538,6 +539,8 @@ export function createApiClient(baseUrl: string): ApiClient {
         get<{ categories: Category[] }>(`/api/public/${ref}/shops/${shopId}/categories`).then((r) => r.categories),
       geocode: (address) =>
         get(`/api/geocode?address=${encodeURIComponent(address)}`),
+      reverseGeocode: (lat, lon) =>
+        get<{ address: string | null }>(`/api/reverse-geocode?lat=${lat}&lon=${lon}`),
       deliveryCheck: (ref, lat, lon) =>
         get(`/api/public/${ref}/delivery-check?lat=${lat}&lon=${lon}`),
       shopDeliveryCheck: (ref, shopId, lat, lon) =>

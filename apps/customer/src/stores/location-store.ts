@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { api } from "@/lib/api";
 
 const safeStorage = createJSONStorage(() =>
   typeof window !== "undefined"
@@ -40,17 +41,35 @@ export const useLocationStore = create<LocationState>()(
           set({ status: "denied" });
           return;
         }
-        set({ status: "loading" });
+        // Clear existing address so the UI doesn't show stale data while re-detecting.
+        set({ status: "loading", address: null });
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            set({
-              lat: pos.coords.latitude,
-              lon: pos.coords.longitude,
-              status: "granted",
-            });
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+
+            // Update coordinates immediately so restaurant filtering refreshes.
+            set({ lat, lon, status: "granted" });
+
+            // Reverse-geocode to a human-readable address (best-effort).
+            void (async () => {
+              try {
+                const geo = await api.public.reverseGeocode(lat, lon);
+                if (geo && typeof geo.address === "string") {
+                  // Safety net: strip any Google Plus Code prefix that might
+                  // still come through as part of `formatted_address`.
+                  const PLUS_CODE_PREFIX_RE =
+                    /^([0-9A-Z]{4,6}\+[0-9A-Z]{2,4})(?:,)?\s*/i;
+                  const cleaned = geo.address.replace(PLUS_CODE_PREFIX_RE, "").trim();
+                  if (cleaned) set({ address: cleaned });
+                }
+              } catch {
+                // Ignore reverse-geocoding failures; coordinates are still useful.
+              }
+            })();
           },
           () => {
-            set({ status: "denied" });
+            set({ status: "denied", address: null });
           },
           { enableHighAccuracy: false, timeout: 10000 }
         );
