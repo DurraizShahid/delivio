@@ -7,13 +7,19 @@ import { api } from "@/lib/api";
 import type { PlatformBanner } from "@delivio/types";
 
 export function PromoBanner() {
-  const { data } = useQuery<{ banners: PlatformBanner[] }>({
+  const { data, isLoading, isError, error } = useQuery<{ banners: PlatformBanner[] }>({
     queryKey: ["public-banners"],
     queryFn: () => api.public.banners(),
     staleTime: 5 * 60 * 1000,
   });
 
   const banners = data?.banners ?? [];
+
+  // #region agent log
+  if (typeof window !== "undefined") {
+    fetch('http://127.0.0.1:7929/ingest/c6b94d87-f945-4818-a38c-cf95b2daae21',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0512be'},body:JSON.stringify({sessionId:'0512be',runId:'pre-fix',hypothesisId:'H4',location:'apps/customer/src/components/promo-banner.tsx:PromoBanner:queryState',message:'Customer PromoBanner query/render state',data:{isLoading,isError,errorMessage:isError?String((error as Error)?.message||'unknown'):null,bannersCount:banners.length,bannerIds:banners.map((b)=>b.id)},timestamp:Date.now()})}).catch(()=>{});
+  }
+  // #endregion
 
   if (banners.length === 0) return null;
 

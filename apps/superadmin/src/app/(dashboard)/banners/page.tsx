@@ -59,6 +59,21 @@ const emptyForm = {
 
 type BannerForm = typeof emptyForm;
 
+function toDatetimeLocal(iso: string) {
+  // Convert stored ISO (UTC) to a `datetime-local` string (local time, no timezone suffix).
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function fromDatetimeLocal(value: string) {
+  // Parse `datetime-local` as local time in the admin browser, then convert to ISO (UTC).
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 export default function BannersPage() {
   const qc = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,8 +98,8 @@ export default function BannersPage() {
         textColor: form.textColor,
         sortOrder: form.sortOrder,
         isActive: form.isActive,
-        startsAt: form.startsAt || null,
-        endsAt: form.endsAt || null,
+        startsAt: form.startsAt ? fromDatetimeLocal(form.startsAt) : null,
+        endsAt: form.endsAt ? fromDatetimeLocal(form.endsAt) : null,
       };
       if (editingId) {
         return api.superadmin.banners.update(editingId, payload);
@@ -137,8 +152,8 @@ export default function BannersPage() {
       textColor: b.textColor,
       sortOrder: b.sortOrder,
       isActive: b.isActive,
-      startsAt: b.startsAt ? b.startsAt.slice(0, 16) : "",
-      endsAt: b.endsAt ? b.endsAt.slice(0, 16) : "",
+      startsAt: b.startsAt ? toDatetimeLocal(b.startsAt) : "",
+      endsAt: b.endsAt ? toDatetimeLocal(b.endsAt) : "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }

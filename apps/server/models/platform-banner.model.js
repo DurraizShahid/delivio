@@ -13,14 +13,12 @@ class PlatformBannerModel extends BaseModel {
   }
 
   async listActive() {
-    const now = new Date().toISOString();
-    const rows = await this.findMany(
-      { is_active: true },
-      { order: 'sort_order.asc,created_at.desc' }
-    );
+    const now = new Date();
+    const rows = await this.findMany({}, { order: 'sort_order.asc,created_at.desc' });
     return (rows || []).filter((r) => {
-      if (r.starts_at && new Date(r.starts_at) > new Date(now)) return false;
-      if (r.ends_at && new Date(r.ends_at) < new Date(now)) return false;
+      if (!r.is_active) return false;
+      if (r.starts_at && new Date(r.starts_at) > now) return false;
+      if (r.ends_at && new Date(r.ends_at) < now) return false;
       return true;
     });
   }

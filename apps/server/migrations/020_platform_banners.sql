@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS platform_banners (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE platform_banners DISABLE ROW LEVEL SECURITY;
+
 CREATE INDEX IF NOT EXISTS platform_banners_active_idx
   ON platform_banners (is_active, sort_order)
   WHERE is_active = true;
