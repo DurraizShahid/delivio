@@ -21,6 +21,8 @@ import type {
   Rating,
   Tip,
   VendorSettings,
+  Superadmin,
+  User,
 } from "@delivio/types";
 
 async function request<T>(
@@ -250,6 +252,36 @@ export interface ApiClient {
     geocode(address: string): Promise<{ lat: number; lon: number }>;
     deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
     shopDeliveryCheck(ref: string, shopId: string, lat: number, lon: number): Promise<DeliveryCheck>;
+  };
+  superadmin: {
+    auth: {
+      login(email: string, password: string): Promise<{ user: Superadmin }>;
+      logout(): Promise<void>;
+      session(): Promise<{ user: Superadmin } | null>;
+    };
+    workspaces: {
+      list(): Promise<{ workspaces: Workspace[] }>;
+      create(params: { projectRef: string; name: string; description?: string | null; address?: string | null; phone?: string | null }): Promise<{ workspace: Workspace }>;
+      update(id: string, params: Partial<{ name: string; description: string | null; logoUrl: string | null; bannerUrl: string | null; address: string | null; phone: string | null }>): Promise<{ workspace: Workspace }>;
+    };
+    users: {
+      list(params?: { role?: string; projectRef?: string; limit?: number; offset?: number }): Promise<{ users: User[] }>;
+      create(params: { email: string; password: string; role: string; projectRef: string }): Promise<{ user: User }>;
+      update(id: string, params: Partial<{ email: string; role: string; projectRef: string }>): Promise<{ user: User }>;
+      delete(id: string): Promise<{ ok: boolean }>;
+    };
+    shops: {
+      list(params?: { projectRef?: string; limit?: number }): Promise<{ shops: Shop[] }>;
+      create(params: { projectRef: string; name: string; slug: string; description?: string | null; address?: string | null; phone?: string | null; lat?: number | null; lon?: number | null }): Promise<{ shop: Shop }>;
+      update(id: string, params: Partial<{ name: string; slug: string; description: string | null; address: string | null; phone: string | null; isActive: boolean }>): Promise<{ shop: Shop }>;
+    };
+    customers: {
+      list(params?: { projectRef?: string; limit?: number; offset?: number }): Promise<{ customers: Customer[] }>;
+    };
+    orders: {
+      list(params?: { projectRef?: string; status?: string; limit?: number; offset?: number }): Promise<{ orders: Order[] }>;
+    };
+    stats(): Promise<{ stats: { totalWorkspaces: number; totalShops: number; totalUsers: number; totalCustomers: number; totalOrders: number; totalRevenueCents: number } }>;
   };
 }
 
@@ -481,6 +513,67 @@ export function createApiClient(baseUrl: string): ApiClient {
         get(`/api/public/${ref}/delivery-check?lat=${lat}&lon=${lon}`),
       shopDeliveryCheck: (ref, shopId, lat, lon) =>
         get(`/api/public/${ref}/shops/${shopId}/delivery-check?lat=${lat}&lon=${lon}`),
+    },
+    superadmin: {
+      auth: {
+        login: (email, password) =>
+          post("/api/superadmin/auth/login", { email, password }),
+        logout: () => post("/api/superadmin/auth/logout"),
+        session: () =>
+          get<{ user: Superadmin } | null>("/api/superadmin/auth/session").catch(() => null),
+      },
+      workspaces: {
+        list: () => get("/api/superadmin/workspaces"),
+        create: (params) => post("/api/superadmin/workspaces", params),
+        update: (id, params) => patch(`/api/superadmin/workspaces/${id}`, params),
+      },
+      users: {
+        list: (params) => {
+          const qs = new URLSearchParams();
+          if (params?.role) qs.set("role", params.role);
+          if (params?.projectRef) qs.set("projectRef", params.projectRef);
+          if (params?.limit) qs.set("limit", String(params.limit));
+          if (params?.offset) qs.set("offset", String(params.offset));
+          const q = qs.toString();
+          return get(`/api/superadmin/users${q ? `?${q}` : ""}`);
+        },
+        create: (params) => post("/api/superadmin/users", params),
+        update: (id, params) => patch(`/api/superadmin/users/${id}`, params),
+        delete: (id) => del(`/api/superadmin/users/${id}`),
+      },
+      shops: {
+        list: (params) => {
+          const qs = new URLSearchParams();
+          if (params?.projectRef) qs.set("projectRef", params.projectRef);
+          if (params?.limit) qs.set("limit", String(params.limit));
+          const q = qs.toString();
+          return get(`/api/superadmin/shops${q ? `?${q}` : ""}`);
+        },
+        create: (params) => post("/api/superadmin/shops", params),
+        update: (id, params) => patch(`/api/superadmin/shops/${id}`, params),
+      },
+      customers: {
+        list: (params) => {
+          const qs = new URLSearchParams();
+          if (params?.projectRef) qs.set("projectRef", params.projectRef);
+          if (params?.limit) qs.set("limit", String(params.limit));
+          if (params?.offset) qs.set("offset", String(params.offset));
+          const q = qs.toString();
+          return get(`/api/superadmin/customers${q ? `?${q}` : ""}`);
+        },
+      },
+      orders: {
+        list: (params) => {
+          const qs = new URLSearchParams();
+          if (params?.projectRef) qs.set("projectRef", params.projectRef);
+          if (params?.status) qs.set("status", params.status);
+          if (params?.limit) qs.set("limit", String(params.limit));
+          if (params?.offset) qs.set("offset", String(params.offset));
+          const q = qs.toString();
+          return get(`/api/superadmin/orders${q ? `?${q}` : ""}`);
+        },
+      },
+      stats: () => get("/api/superadmin/stats"),
     },
   };
 }

@@ -41,6 +41,15 @@ For shop-scoped routes (catalog, vendor-settings), include `attachShopId`, `requ
 | `requireRole('vendor','admin')` | Role-restricted routes |
 | `requireCustomer` | Customer-only routes |
 | `requireAnyAuth` | Any authenticated user |
+| `requireSuperadmin` | Platform superadmin routes (`/api/superadmin/*`) |
+
+## Superadmin API
+
+All `/api/superadmin/*` routes are platform-level (no project_ref scoping). Protected by `requireSuperadmin`.
+
+- Auth: `POST /api/superadmin/auth/login`, `/logout`, `GET /session`
+- Resources: workspaces, users, shops, customers, orders CRUD + `GET /api/superadmin/stats`
+- Superadmin sessions use `superadmin_session` cookie and `session:superadmin:` key prefix.
 
 ## Error Responses
 

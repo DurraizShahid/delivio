@@ -16,7 +16,7 @@ Shop-scoped tables (have both `project_ref` and `shop_id`): `products`, `categor
 
 Geofence tables: `rider_geofences` (per rider, `user_id` unique). Shops store `delivery_geofence JSONB` (GeoJSON Polygon) directly on the `shops` table.
 
-Global tables (no project_ref): `stripe_events`, `schema_migrations`.
+Global tables (no project_ref): `stripe_events`, `schema_migrations`, `superadmins`.
 
 ## Writing Migrations
 

@@ -2,16 +2,26 @@
 
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const { getAdminSession, getCustomerSession } = require('../services/session.service');
+const { getAdminSession, getCustomerSession, getSuperadminSession } = require('../services/session.service');
 
 /**
  * Parse session cookie and attach identity to req.
- * Does NOT reject — use requireAdmin/requireCustomer guards for that.
+ * Checks superadmin, admin, and customer sessions in priority order.
  */
 async function parseSession(req, res, next) {
   try {
+    const superadminSid = req.cookies?.superadmin_session;
     const adminSid = req.cookies?.admin_session;
     const customerSid = req.cookies?.customer_session;
+
+    if (superadminSid) {
+      const session = await getSuperadminSession(superadminSid);
+      if (session) {
+        req.superadmin = session;
+        req.superadminSessionId = superadminSid;
+        return next();
+      }
+    }
 
     if (adminSid) {
       const session = await getAdminSession(adminSid);
@@ -31,16 +41,16 @@ async function parseSession(req, res, next) {
       }
     }
 
-    // Check Authorization Bearer JWT (for API clients / mobile)
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       try {
         const payload = jwt.verify(token, config.jwt.secret);
-        if (payload.type === 'admin') req.user = payload;
+        if (payload.type === 'superadmin') req.superadmin = payload;
+        else if (payload.type === 'admin') req.user = payload;
         else if (payload.type === 'customer') req.customer = payload;
       } catch {
-        // Invalid JWT — continue as unauthenticated
+        // Invalid JWT
       }
     }
 
@@ -50,9 +60,6 @@ async function parseSession(req, res, next) {
   }
 }
 
-/**
- * Require a valid admin/staff session.
- */
 function requireAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -60,9 +67,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-/**
- * Require admin with specific role(s).
- */
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) {
@@ -75,9 +79,6 @@ function requireRole(...roles) {
   };
 }
 
-/**
- * Require a valid customer session.
- */
 function requireCustomer(req, res, next) {
   if (!req.customer) {
     return res.status(401).json({ error: 'Customer authentication required' });
@@ -85,9 +86,6 @@ function requireCustomer(req, res, next) {
   next();
 }
 
-/**
- * Require either admin or customer session.
- */
 function requireAnyAuth(req, res, next) {
   if (!req.user && !req.customer) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -95,17 +93,19 @@ function requireAnyAuth(req, res, next) {
   next();
 }
 
-/**
- * Return the authenticated user's ID regardless of type.
- */
-function getCallerId(req) {
-  return req.user?.id || req.customer?.id || null;
+function requireSuperadmin(req, res, next) {
+  if (!req.superadmin) {
+    return res.status(401).json({ error: 'Superadmin authentication required' });
+  }
+  next();
 }
 
-/**
- * Return the caller's role.
- */
+function getCallerId(req) {
+  return req.superadmin?.id || req.user?.id || req.customer?.id || null;
+}
+
 function getCallerRole(req) {
+  if (req.superadmin) return 'superadmin';
   if (req.user) return req.user.role;
   if (req.customer) return 'customer';
   return null;
@@ -117,6 +117,7 @@ module.exports = {
   requireRole,
   requireCustomer,
   requireAnyAuth,
+  requireSuperadmin,
   getCallerId,
   getCallerRole,
 };

@@ -42,6 +42,25 @@ async function deleteAdminSession(sessionId) {
   await getStore().delete(`session:admin:${sessionId}`);
 }
 
+// ─── Superadmin Sessions ─────────────────────────────────────────────────────
+
+async function createSuperadminSession(data) {
+  const sessionId = uuidv4();
+  const key = `session:superadmin:${sessionId}`;
+  await getStore().set(key, { ...data, type: 'superadmin' }, config.session.adminTTL);
+  return sessionId;
+}
+
+async function getSuperadminSession(sessionId) {
+  if (!sessionId) return null;
+  return getStore().get(`session:superadmin:${sessionId}`);
+}
+
+async function deleteSuperadminSession(sessionId) {
+  if (!sessionId) return;
+  await getStore().delete(`session:superadmin:${sessionId}`);
+}
+
 // ─── Customer Sessions ───────────────────────────────────────────────────────
 
 async function createCustomerSession(customerData) {
@@ -157,6 +176,9 @@ module.exports = {
   createAdminSession,
   getAdminSession,
   deleteAdminSession,
+  createSuperadminSession,
+  getSuperadminSession,
+  deleteSuperadminSession,
   createCustomerSession,
   getCustomerSession,
   deleteCustomerSession,

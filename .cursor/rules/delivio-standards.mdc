@@ -17,6 +17,7 @@ Delivio is a **multi-tenant delivery platform** monorepo (Turborepo) with:
 | Customer Mobile | Expo / React Native | `apps/customer-mobile/` |
 | Rider Mobile | Expo / React Native | `apps/rider-mobile/` |
 | Vendor Mobile | Expo / React Native | `apps/vendor-mobile/` |
+| Superadmin Web | Next.js | `apps/superadmin/` |
 | API Client | TypeScript | `packages/api/` |
 | Shared Types | TypeScript | `packages/types/` |
 | Shared UI | React | `packages/ui/` |
@@ -91,8 +92,10 @@ Delivery zones are drawn as **GeoJSON Polygon** geofences on Leaflet maps (web),
 
 - **Admins/vendors/riders:** email + password login, session cookies (`admin_session`), optional 2FA (TOTP).
 - **Customers:** phone OTP login, session cookies (`customer_session`).
+- **Superadmins:** separate `superadmins` table (no project_ref), session cookie (`superadmin_session`), `requireSuperadmin` guard. Platform-level access to all workspaces.
 - **API/mobile clients:** JWT bearer tokens.
-- Role-based access: `requireAdmin`, `requireRole(...)`, `requireCustomer`, `requireAnyAuth`.
+- Role-based access: `requireAdmin`, `requireRole(...)`, `requireCustomer`, `requireAnyAuth`, `requireSuperadmin`.
+- `parseSession` checks `superadmin_session` first, then `admin_session`, then `customer_session`.
 
 ## Validation
 

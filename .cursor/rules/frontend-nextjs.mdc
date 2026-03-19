@@ -13,6 +13,7 @@ alwaysApply: false
 | Customer | 3000 | `apps/customer/` |
 | Vendor | 3001 | `apps/vendor/` |
 | Rider | 3002 | `apps/rider/` |
+| Superadmin | 3003 | `apps/superadmin/` |
 
 All share `@delivio/api`, `@delivio/types`, `@delivio/ui`.
 
@@ -51,6 +52,13 @@ All share `@delivio/api`, `@delivio/types`, `@delivio/ui`.
 1. Email/password login → `admin_session` cookie.
 2. Session check on mount via `/api/auth/session`.
 3. Rider-specific pages gated by `requireRole('rider')`.
+
+## Auth Flow (Superadmin App)
+
+1. Email/password login → `superadmin_session` cookie via `POST /api/superadmin/auth/login`.
+2. Session check on mount via `GET /api/superadmin/auth/session`.
+3. All dashboard pages guarded by `useAuthStore` hydration.
+4. Uses `api.superadmin.*` namespace for all API calls.
 
 ## API Calls
 

@@ -29,12 +29,14 @@ When adding new API endpoints, add corresponding client methods here so all fron
 - **Vendor settings** accept optional `shopId` for shop-scoped settings.
 - **Public methods:** `api.public.shops(ref, lat?, lon?)` (filters by geofence when lat/lon provided), `.shopDetail(ref, shopId)`, `.shopProducts(ref, shopId)`, `.shopCategories(ref, shopId)`, `.shopDeliveryCheck(ref, shopId, lat, lon)`.
 - **Rider geofence:** `api.riderGeofence.get()`, `.save(geofence)` — `GET/PUT /api/rider/geofence`.
+- **Superadmin:** `api.superadmin.auth.login/logout/session`, `.workspaces.list/create/update`, `.users.list/create/update/delete`, `.shops.list/create/update`, `.customers.list`, `.orders.list`, `.stats()`.
 
 ## @delivio/types
 
 - Canonical source for shared TypeScript interfaces and enums.
 - **Multi-shop types:** `Shop`, `UserShop` interfaces. `Order`, `Product`, `Category`, `CartSession`, `VendorSettings` all include optional `shopId`.
 - **Geofence types:** `GeoPolygon` (GeoJSON Polygon), `RiderGeofence`. `Shop` includes optional `deliveryGeofence`.
+- **Superadmin type:** `Superadmin` interface (id, email, name, timestamps).
 - **WSEvent** union type defines all WebSocket event payloads:
   - `OrderStatusChanged`, `OrderRejected`, `OrderDelayed`
   - `DeliveryLocationUpdate`, `DeliveryRiderArrived`, `DeliveryRequest`

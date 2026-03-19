@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { parseSession, requireAnyAuth, requireAdmin } = require('../middleware/auth.middleware');
+const { parseSession, requireAnyAuth, requireAdmin, requireSuperadmin } = require('../middleware/auth.middleware');
 const { attachProjectRef, requireProjectRef } = require('../middleware/project-ref.middleware');
 const { globalLimiter } = require('../middleware/rate-limit.middleware');
 
@@ -21,6 +21,8 @@ const adminSettingsRoutes   = require('./admin-settings.routes');
 const catalogRoutes         = require('./catalog.routes');
 const shopRoutes            = require('./shop.routes');
 const riderGeofenceRoutes   = require('./rider-geofence.routes');
+const superadminAuthRoutes  = require('./superadmin-auth.routes');
+const superadminRoutes      = require('./superadmin.routes');
 
 const router = Router();
 
@@ -48,6 +50,10 @@ router.use('/ratings',          requireAnyAuth, ratingRoutes);
 router.use('/tips',             requireAnyAuth, tipRoutes);
 router.use('/vendor-settings',  attachProjectRef, requireProjectRef, requireAdmin, vendorSettingsRoutes);
 router.use('/admin-settings',  requireAdmin, adminSettingsRoutes);
+
+// Superadmin routes
+router.use('/superadmin/auth', superadminAuthRoutes);
+router.use('/superadmin', requireSuperadmin, superadminRoutes);
 
 // Payment routes (webhook uses raw body — must be mounted separately)
 router.use('/', paymentRoutes);

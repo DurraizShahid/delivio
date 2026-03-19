@@ -395,6 +395,16 @@ export type WSEvent =
   | WSChatRead
   | WSChatTyping;
 
+// ─── Superadmin ───────────────────────────────────────────────────────────────
+
+export interface Superadmin {
+  id: string;
+  email: string;
+  name?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── API Response Wrappers ─────────────────────────────────────────────────────
 
 export interface ApiError {
