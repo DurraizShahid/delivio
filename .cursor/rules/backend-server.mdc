@@ -53,7 +53,15 @@ Jobs live in `jobs/` and run via `node-cron`. Each job must:
 - Be idempotent — safe to re-run on failure.
 - Log start/end/errors via the logger.
 
-Current jobs: `auto-dispatch`, `cart-cleanup`, `location-flush`, `sla-check`, `scheduled-orders`.
+Current jobs: `auto-dispatch`, `cart-cleanup`, `location-flush`, `sla-check`, `scheduled-orders`, `radius-expansion`.
+
+## Geofence Matching (lib/geo.js)
+
+- `pointInPolygon(lat, lon, geojsonPolygon)` — ray-casting; used to check if a customer is inside a shop's delivery zone.
+- `polygonsIntersect(poly1, poly2)` — vertex + edge tests; used by auto-dispatch to match riders whose zone overlaps the shop's zone.
+- `circleToPolygon(lat, lon, radiusKm)` — fallback for shops without a drawn geofence.
+- `getEffectiveGeofence(shop, vendorSettings)` — returns drawn geofence or generates a circle from `delivery_radius_km`.
+- Auto-dispatch and radius-expansion jobs load shop geofence + rider geofence, skip geofence check for `vendor_rider` mode shops.
 
 ## WebSocket Broadcasting
 

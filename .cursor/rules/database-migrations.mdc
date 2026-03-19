@@ -14,6 +14,8 @@ Every tenant-scoped table **must** include `project_ref TEXT NOT NULL`. Core tab
 
 Shop-scoped tables (have both `project_ref` and `shop_id`): `products`, `categories`, `orders`, `cart_sessions`, `vendor_settings`.
 
+Geofence tables: `rider_geofences` (per rider, `user_id` unique). Shops store `delivery_geofence JSONB` (GeoJSON Polygon) directly on the `shops` table.
+
 Global tables (no project_ref): `stripe_events`, `schema_migrations`.
 
 ## Writing Migrations

@@ -42,6 +42,8 @@ Vendors can own **multiple shops** (branches/locations) within a single workspac
 | Orders | `orders` | Per-shop (`shop_id` FK) |
 | Settings | `vendor_settings` | Per-shop (`shop_id` FK) |
 | Staff access | `user_shops` | Junction table — vendor users assigned to specific shops |
+| Delivery zones | `shops.delivery_geofence` | GeoJSON Polygon per shop |
+| Rider zones | `rider_geofences` | GeoJSON Polygon per rider |
 
 **Key rules:**
 - `admin` role users have access to **all shops** in their `project_ref`.
@@ -51,6 +53,18 @@ Vendors can own **multiple shops** (branches/locations) within a single workspac
 - Products, categories, orders, and vendor_settings retain `project_ref` for tenant isolation but are primarily scoped by `shop_id`.
 - Public API routes: `GET /api/public/:ref/shops` lists shops, `GET /api/public/:ref/shops/:shopId/products` for shop menus.
 - Frontend apps use a Zustand `useShopStore` for active shop context.
+
+## Geofence System
+
+Delivery zones are drawn as **GeoJSON Polygon** geofences on Leaflet maps (web), replacing the old `delivery_radius_km` circle.
+
+- **Shops** set their location (pin) and draw a delivery zone polygon on the map. Stored in `shops.delivery_geofence` (JSONB).
+- **Riders** draw their operating zone polygon. Stored in `rider_geofences.geofence` (JSONB).
+- **Customer visibility:** customers only see shops whose delivery geofence contains their browser geolocation (`pointInPolygon` check).
+- **Rider matching:** auto-dispatch only notifies riders whose geofence polygon **intersects** the shop's delivery polygon (`polygonsIntersect`). Exception: shops using `vendor_rider` delivery mode skip the geofence check.
+- **Fallback:** shops without a drawn geofence fall back to a circle generated from the legacy `delivery_radius_km` via `circleToPolygon`.
+- **Geo utilities** live in `apps/server/lib/geo.js`: `pointInPolygon`, `polygonsIntersect`, `circleToPolygon`, `getEffectiveGeofence`, `haversineKm`.
+- **Maps:** Leaflet on web (dynamically imported with `ssr: false`). Mobile apps use `react-native-maps`. Map provider is swappable to Google Maps later.
 
 ## UI Standards
 

@@ -61,6 +61,16 @@ import { api } from '@delivio/api';
 const orders = await api.orders.list({ status: 'placed' });
 ```
 
+## Maps (Leaflet)
+
+- **Leaflet** is the map provider for all web apps. Installed: `leaflet`, `react-leaflet`, `leaflet-draw`.
+- Leaflet requires `window` — always use **dynamic import** with `ssr: false` in Next.js.
+- Map components live in `src/components/map/` per app, exported via `index.tsx` dynamic wrapper.
+- **Vendor:** `GeofenceDrawerMap` — click to set shop pin + draw delivery zone polygon. Used on `/shops` page.
+- **Rider:** `GeofenceDrawerMap` — draw delivery zone polygon. Used on `/geofence` page.
+- **Customer:** browser geolocation passed to `api.public.shops(ref, lat, lon)` for server-side filtering.
+- Map tiles: OpenStreetMap (swappable to Google Maps via tile URL + API key later).
+
 ## Data Patterns
 
 - Prices displayed from cents: `(priceCents / 100).toFixed(2)`.
