@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=delivio-backend --filter=@delivio/customer --filter=@delivio/vendor --filter=@delivio/rider --filter=@delivio/superadmin",
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test"
