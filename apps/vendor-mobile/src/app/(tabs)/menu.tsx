@@ -15,6 +15,7 @@ import type { Product, Category } from "@delivio/types";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
+import { useShopStore } from "@/stores/shop-store";
 
 function formatCents(cents: number) {
   return `£${(cents / 100).toFixed(2)}`;
@@ -22,19 +23,20 @@ function formatCents(cents: number) {
 
 export default function MenuScreen() {
   const user = useAuthStore((s) => s.user);
+  const activeShop = useShopStore((s) => s.activeShop);
   const qc = useQueryClient();
   const router = useRouter();
 
   const { data: catRes } = useQuery<{ categories: Category[] }>({
-    queryKey: ["catalog", "categories", user?.projectRef],
-    queryFn: () => api.catalog.listCategories(),
-    enabled: !!user?.projectRef,
+    queryKey: ["catalog", "categories", activeShop?.id],
+    queryFn: () => api.catalog.listCategories(activeShop?.id),
+    enabled: !!activeShop?.id,
   });
 
   const { data: res, isLoading } = useQuery<{ products: Product[] }>({
-    queryKey: ["vendor-products", user?.projectRef],
-    queryFn: () => api.catalog.listProducts(),
-    enabled: !!user?.projectRef,
+    queryKey: ["vendor-products", activeShop?.id],
+    queryFn: () => api.catalog.listProducts(undefined, activeShop?.id),
+    enabled: !!activeShop?.id,
   });
   const products = res?.products ?? [];
 
@@ -42,9 +44,9 @@ export default function MenuScreen() {
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, available }: { id: string; available: boolean }) =>
-      api.catalog.updateProduct(id, { available }),
+      api.catalog.updateProduct(id, { available }, activeShop?.id),
     onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["vendor-products", user?.projectRef] }),
+      qc.invalidateQueries({ queryKey: ["vendor-products", activeShop?.id] }),
   });
 
   const renderProduct = ({ item }: { item: Product }) => (

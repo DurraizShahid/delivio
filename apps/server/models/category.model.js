@@ -9,18 +9,27 @@ class CategoryModel extends BaseModel {
     super('categories');
   }
 
-  async list(projectRef) {
+  async list(shopId) {
+    return select(this.table, {
+      filters: { shop_id: shopId },
+      order: 'sort_order.asc,name.asc',
+    });
+  }
+
+  /** @deprecated Use list(shopId) instead */
+  async listByProjectRef(projectRef) {
     return select(this.table, {
       filters: { project_ref: projectRef },
       order: 'sort_order.asc,name.asc',
     });
   }
 
-  async createCategory(projectRef, data) {
+  async createCategory(shopId, projectRef, data) {
     const now = new Date().toISOString();
     const row = {
       id: uuidv4(),
       project_ref: projectRef,
+      shop_id: shopId,
       name: data.name,
       sort_order: data.sortOrder ?? 0,
       created_at: now,
@@ -30,20 +39,19 @@ class CategoryModel extends BaseModel {
     return Array.isArray(res) ? res[0] : res;
   }
 
-  async updateCategory(projectRef, id, data) {
+  async updateCategory(shopId, id, data) {
     const patch = {
       ...(data.name != null ? { name: data.name } : {}),
       ...(data.sortOrder != null ? { sort_order: data.sortOrder } : {}),
       updated_at: new Date().toISOString(),
     };
-    const res = await update(this.table, patch, { id, project_ref: projectRef });
+    const res = await update(this.table, patch, { id, shop_id: shopId });
     return Array.isArray(res) ? res[0] : res;
   }
 
-  async deleteCategory(projectRef, id) {
-    return remove(this.table, { id, project_ref: projectRef });
+  async deleteCategory(shopId, id) {
+    return remove(this.table, { id, shop_id: shopId });
   }
 }
 
 module.exports = new CategoryModel();
-

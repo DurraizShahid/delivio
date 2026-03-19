@@ -15,25 +15,35 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
-import type { Workspace } from "@delivio/types";
+import type { Shop } from "@delivio/types";
+
+const DEMO_REFS = ["demo"];
 
 export default function HomeScreen() {
   const router = useRouter();
   const [search, setSearch] = useState("");
 
-  const { data: restaurants, isLoading } = useQuery<Workspace[]>({
-    queryKey: ["restaurants"],
+  const { data: shops, isLoading } = useQuery<Shop[]>({
+    queryKey: ["all-shops"],
     queryFn: async () => {
-      const res = await api.public.products("_directory", "workspaces");
-      return res as unknown as Workspace[];
+      const results = await Promise.allSettled(
+        DEMO_REFS.map((ref) => api.public.shops(ref))
+      );
+      return results
+        .filter(
+          (r): r is PromiseFulfilledResult<Shop[]> =>
+            r.status === "fulfilled"
+        )
+        .flatMap((r) => r.value);
     },
   });
 
-  const filtered = restaurants?.filter(
-    (r) =>
+  const filtered = shops?.filter(
+    (s) =>
       !search ||
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.description?.toLowerCase().includes(search.toLowerCase())
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.description?.toLowerCase().includes(search.toLowerCase()) ||
+      s.address?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -49,7 +59,7 @@ export default function HomeScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search restaurants..."
+            placeholder="Search shops..."
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -77,7 +87,7 @@ export default function HomeScreen() {
             size={48}
             color={colors.mutedForeground}
           />
-          <Text style={styles.emptyText}>No restaurants found</Text>
+          <Text style={styles.emptyText}>No shops found</Text>
         </View>
       ) : (
         <FlatList
@@ -89,7 +99,9 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.card}
               activeOpacity={0.7}
-              onPress={() => router.push(`/restaurant/${item.projectRef}`)}
+              onPress={() =>
+                router.push(`/restaurant/${item.projectRef}?shopId=${item.id}`)
+              }
             >
               {item.bannerUrl ? (
                 <Image

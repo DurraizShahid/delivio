@@ -1,0 +1,59 @@
+---
+description: Expo / React Native mobile app conventions for customer, rider, and vendor apps
+globs: apps/customer-mobile/**,apps/rider-mobile/**,apps/vendor-mobile/**
+alwaysApply: false
+---
+
+# Mobile App Conventions (Expo / React Native)
+
+## Apps
+
+| App | Path | Purpose |
+|---|---|---|
+| Customer Mobile | `apps/customer-mobile/` | Ordering, tracking, chat |
+| Rider Mobile | `apps/rider-mobile/` | Deliveries, navigation, availability |
+| Vendor Mobile | `apps/vendor-mobile/` | Order management, menu CRUD, settings |
+
+All three use **Expo** with the Expo Router for file-based navigation.
+
+## Shared Packages
+
+Import from `@delivio/api` (HTTP + WS clients), `@delivio/types`, and `@delivio/ui` where possible. Avoid duplicating logic that already exists in shared packages.
+
+## Auth
+
+- Customer: OTP phone login → JWT bearer token stored in secure storage.
+- Rider/Vendor: email + password login → JWT bearer token stored in secure storage.
+- Attach `Authorization: Bearer <token>` to all API requests and WS connections (`?token=...`).
+
+## Real-Time
+
+- Use `createWSClient` from `@delivio/api` with the WS URL and `?token=<jwt>`.
+- Subscribe to relevant events:
+  - **Customer:** `order:status_changed`, `chat:message`.
+  - **Rider:** `delivery:request`, `delivery:location_update`, `order:status_changed`, `chat:message`.
+  - **Vendor:** `order:status_changed`, `chat:message`.
+
+## Location Services
+
+- **Rider app:** publish location every ~10s when online via `POST /api/deliveries/rider/location`.
+- Respect rate limits (throttled per delivery).
+- Use native maps (Apple Maps / Google Maps) for navigation deep links.
+
+## Push Notifications
+
+- Register FCM token via `POST /api/push/register`.
+- Handle push notification taps to navigate to the relevant order/chat.
+
+## UI
+
+- Use React Native components; reuse `@delivio/ui` primitives where compatible.
+- Follow platform conventions (iOS / Android) for navigation patterns.
+- Handle offline states gracefully with retry logic.
+
+## Delivery State Machine (Rider)
+
+Rider updates delivery status in sequence:
+`pending → claimed → picked_up → arrived → completed`
+
+Use optimistic locking for claims — handle 409 conflicts gracefully (show "already claimed" feedback).

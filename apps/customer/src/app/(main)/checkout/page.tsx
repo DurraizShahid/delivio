@@ -21,7 +21,7 @@ import type { DeliveryCheck } from "@delivio/types";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalCents, clear, projectRef } = useCartStore();
+  const { items, totalCents, clear, projectRef, shopId } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState("");
@@ -39,7 +39,9 @@ export default function CheckoutPage() {
       setCheckingDelivery(true);
       try {
         const geo = await api.public.geocode(address.trim());
-        const check = await api.public.deliveryCheck(projectRef, geo.lat, geo.lon);
+        const check = shopId
+          ? await api.public.shopDeliveryCheck(projectRef, shopId, geo.lat, geo.lon)
+          : await api.public.deliveryCheck(projectRef, geo.lat, geo.lon);
         setDeliveryCheck(check);
       } catch {
         setDeliveryCheck(null);

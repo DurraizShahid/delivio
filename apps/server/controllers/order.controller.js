@@ -29,13 +29,14 @@ const statusMessages = {
 
 async function listOrders(req, res, next) {
   try {
-    const { status, customerId, limit, offset } = req.query;
+    const { status, customerId, limit, offset, shopId } = req.query;
     const callerRole = getCallerRole(req);
     const effectiveCustomerId = callerRole === 'customer' ? req.customer.id : customerId;
 
     const orders = await orderModel.findByProjectRef(req.projectRef, {
       status,
       customerId: effectiveCustomerId,
+      shopId: shopId || null,
       limit,
       offset,
     });
@@ -58,12 +59,18 @@ async function getOrder(req, res, next) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Include delivery and vendor for rating/tip UI
-    const [delivery, vendorUsers] = await Promise.all([
+    // Include delivery, vendor, and shop for rating/tip UI
+    const shopModel = require('../models/shop.model');
+    const [delivery, vendorUsers, shop] = await Promise.all([
       deliveryModel.findByOrderId(req.params.id),
       userModel.findByProjectRef(order.project_ref, 'vendor'),
+      order.shop_id ? shopModel.findById(order.shop_id) : null,
     ]);
+    const { mapShop } = require('../lib/case');
     const orderResponse = { ...order };
+    if (shop) {
+      orderResponse.shop = mapShop(shop);
+    }
     if (delivery) {
       orderResponse.delivery = {
         id: delivery.id,
@@ -89,6 +96,7 @@ async function createOrder(req, res, next) {
 
     const order = await orderModel.createWithItems({
       projectRef: req.projectRef,
+      shopId: req.body.shopId || req.shopId || null,
       customerId,
       items,
       totalCents,
@@ -107,7 +115,9 @@ async function createOrder(req, res, next) {
 
     // Auto-accept if vendor setting enabled
     try {
-      const settings = await vendorSettingsModel.findByProjectRef(req.projectRef);
+      const settings = order.shop_id
+        ? await vendorSettingsModel.findByShopId(order.shop_id)
+        : await vendorSettingsModel.findByProjectRef(req.projectRef);
       if (settings?.auto_accept && order.status === 'placed') {
         const prepTime = settings.default_prep_time_minutes || 20;
         await orderModel.updateStatus(order.id, 'accepted');
@@ -362,7 +372,9 @@ async function acceptOrder(req, res, next) {
     orderModel.validateTransition('placed', 'accepted');
     await orderModel.updateStatus(id, 'accepted');
 
-    const settings = await vendorSettingsModel.findByProjectRef(req.projectRef);
+    const settings = order.shop_id
+      ? await vendorSettingsModel.findByShopId(order.shop_id)
+      : await vendorSettingsModel.findByProjectRef(req.projectRef);
     const prepTime = prepTimeMinutes || settings?.default_prep_time_minutes || 20;
     await orderModel.setSlaDeadline(id, prepTime);
 

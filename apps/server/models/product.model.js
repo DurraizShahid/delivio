@@ -9,7 +9,17 @@ class ProductModel extends BaseModel {
     super('products');
   }
 
-  async list(projectRef, { includeUnavailable = true } = {}) {
+  async list(shopId, { includeUnavailable = true } = {}) {
+    const filters = { shop_id: shopId };
+    if (!includeUnavailable) filters.available = true;
+    return select(this.table, {
+      filters,
+      order: 'sort_order.asc,created_at.desc',
+    });
+  }
+
+  /** @deprecated Use list(shopId) instead */
+  async listByProjectRef(projectRef, { includeUnavailable = true } = {}) {
     const filters = { project_ref: projectRef };
     if (!includeUnavailable) filters.available = true;
     return select(this.table, {
@@ -18,16 +28,17 @@ class ProductModel extends BaseModel {
     });
   }
 
-  async get(projectRef, id) {
-    const rows = await select(this.table, { filters: { id, project_ref: projectRef } });
+  async get(shopId, id) {
+    const rows = await select(this.table, { filters: { id, shop_id: shopId } });
     return rows?.[0] || null;
   }
 
-  async createProduct(projectRef, data) {
+  async createProduct(shopId, projectRef, data) {
     const now = new Date().toISOString();
     const row = {
       id: uuidv4(),
       project_ref: projectRef,
+      shop_id: shopId,
       name: data.name,
       description: data.description ?? null,
       price_cents: data.priceCents,
@@ -42,7 +53,7 @@ class ProductModel extends BaseModel {
     return Array.isArray(res) ? res[0] : res;
   }
 
-  async updateProduct(projectRef, id, data) {
+  async updateProduct(shopId, id, data) {
     const patch = {
       ...(data.name != null ? { name: data.name } : {}),
       ...(data.description !== undefined ? { description: data.description ?? null } : {}),
@@ -53,14 +64,13 @@ class ProductModel extends BaseModel {
       ...(data.sortOrder != null ? { sort_order: data.sortOrder } : {}),
       updated_at: new Date().toISOString(),
     };
-    const res = await update(this.table, patch, { id, project_ref: projectRef });
+    const res = await update(this.table, patch, { id, shop_id: shopId });
     return Array.isArray(res) ? res[0] : res;
   }
 
-  async deleteProduct(projectRef, id) {
-    return remove(this.table, { id, project_ref: projectRef });
+  async deleteProduct(shopId, id) {
+    return remove(this.table, { id, shop_id: shopId });
   }
 }
 
 module.exports = new ProductModel();
-

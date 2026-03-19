@@ -1,0 +1,53 @@
+---
+description: Conventions for shared @delivio packages (api, types, ui)
+globs: packages/**
+alwaysApply: false
+---
+
+# Shared Packages Conventions
+
+## Package Map
+
+| Package | Path | Purpose |
+|---|---|---|
+| `@delivio/api` | `packages/api/` | HTTP client + WebSocket client for all frontends |
+| `@delivio/types` | `packages/types/` | Shared TypeScript type definitions |
+| `@delivio/ui` | `packages/ui/` | Shared React UI components (shadcn/ui based) |
+
+## @delivio/api
+
+- **HTTP client:** wraps `fetch` with base URL, cookie forwarding, and error handling.
+- **WS client** (`packages/api/src/ws.ts`): `createWSClient(url)` returns `{ connect, disconnect, subscribe, send, isConnected }`.
+  - Reconnection: exponential backoff capped at 30s.
+  - Heartbeat: ping every ~25s.
+  - Event dispatch: handlers registered via `subscribe(eventType, handler)`.
+
+When adding new API endpoints, add corresponding client methods here so all frontends use the same client.
+
+- **Shops namespace:** `api.shops.list()`, `.get()`, `.create()`, `.update()`, `.delete()`, `.listUsers()`, `.assignUser()`, `.removeUser()`.
+- **Catalog methods** accept optional `shopId` parameter (passed as `x-shop-id` header).
+- **Vendor settings** accept optional `shopId` for shop-scoped settings.
+- **Public methods:** `api.public.shops(ref)`, `.shopDetail(ref, shopId)`, `.shopProducts(ref, shopId)`, `.shopCategories(ref, shopId)`, `.shopDeliveryCheck(ref, shopId, lat, lon)`.
+
+## @delivio/types
+
+- Canonical source for shared TypeScript interfaces and enums.
+- **Multi-shop types:** `Shop`, `UserShop` interfaces. `Order`, `Product`, `Category`, `CartSession`, `VendorSettings` all include optional `shopId`.
+- **WSEvent** union type defines all WebSocket event payloads:
+  - `OrderStatusChanged`, `OrderRejected`, `OrderDelayed`
+  - `DeliveryLocationUpdate`, `DeliveryRiderArrived`, `DeliveryRequest`
+  - `ChatMessage`, `ChatRead`, `ChatTyping`
+- When adding a new WS event type, update the union here first, then implement server-side broadcast and client-side handler.
+
+## @delivio/ui
+
+- Built on **shadcn/ui** + **Tailwind CSS** + **Lucide icons**.
+- Exports reusable components consumed by `apps/customer` and `apps/rider`.
+- When creating a new UI component that will be used by multiple apps, add it here.
+- Keep components accessible (keyboard nav, ARIA, focus management).
+
+## Dependency Rules
+
+- Packages must **not** depend on app-level code.
+- Apps import packages via workspace references (`"@delivio/api": "workspace:*"`).
+- Build order is enforced by Turborepo `dependsOn: ["^build"]`.

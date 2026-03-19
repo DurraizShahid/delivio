@@ -19,6 +19,8 @@ const tipRoutes             = require('./tip.routes');
 const vendorSettingsRoutes  = require('./vendor-settings.routes');
 const adminSettingsRoutes   = require('./admin-settings.routes');
 const catalogRoutes         = require('./catalog.routes');
+const shopRoutes            = require('./shop.routes');
+const riderGeofenceRoutes   = require('./rider-geofence.routes');
 
 const router = Router();
 
@@ -38,6 +40,8 @@ router.use('/chat',        chatRoutes);
 router.use('/push',        pushRoutes);
 router.use('/workspace',   workspaceRoutes);
 router.use('/catalog',     catalogRoutes);
+router.use('/shops',       shopRoutes);
+router.use('/rider/geofence', riderGeofenceRoutes);
 
 // Ratings, tips, vendor settings
 router.use('/ratings',          requireAnyAuth, ratingRoutes);

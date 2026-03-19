@@ -13,6 +13,7 @@ import {
   EmptyState,
   OrderStatusBadge,
   PriceDisplay,
+  cn,
 } from "@delivio/ui";
 import type { Order } from "@delivio/types";
 import { useOrders } from "@/hooks/use-orders";
@@ -108,25 +109,26 @@ export default function OrdersPage() {
       : orders?.filter((o) => o.status === activeTab);
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage incoming and active orders
         </p>
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={cn(
+              "shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-all",
               activeTab === tab.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            )}
           >
             {tab.label}
           </button>
@@ -137,7 +139,7 @@ export default function OrdersPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg" />
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
           ))}
         </div>
       ) : !filteredOrders || filteredOrders.length === 0 ? (
@@ -154,10 +156,10 @@ export default function OrdersPage() {
         <div className="space-y-3">
           {filteredOrders.map((order) => (
             <Link key={order.id} href={`/orders/${order.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+              <Card className="shadow-sm border-border/60 transition-all hover:shadow-md hover:border-border">
+                <CardContent className="flex items-center justify-between p-4 sm:p-5">
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2.5">
                       <span className="text-sm font-medium">
                         Order #{order.id.slice(0, 8)}
                       </span>
@@ -180,7 +182,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <ActionButtons order={order} onMutate={invalidate} />
-                    <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                    <ChevronRight className="size-4 text-muted-foreground/50 shrink-0" />
                   </div>
                 </CardContent>
               </Card>

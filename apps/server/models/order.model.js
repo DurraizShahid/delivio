@@ -27,8 +27,23 @@ class OrderModel extends BaseModel {
     super('orders');
   }
 
-  async findByProjectRef(projectRef, { status, customerId, limit = 50, offset = 0 } = {}) {
+  async findByProjectRef(projectRef, { status, customerId, shopId, limit = 50, offset = 0 } = {}) {
     const filters = { project_ref: projectRef };
+    if (status) filters.status = status;
+    if (customerId) filters.customer_id = customerId;
+    if (shopId) filters.shop_id = shopId;
+
+    return select(this.table, {
+      select: '*, order_items(*)',
+      filters,
+      order: 'created_at.desc',
+      limit,
+      offset,
+    });
+  }
+
+  async findByShopId(shopId, { status, customerId, limit = 50, offset = 0 } = {}) {
+    const filters = { shop_id: shopId };
     if (status) filters.status = status;
     if (customerId) filters.customer_id = customerId;
 
@@ -53,7 +68,7 @@ class OrderModel extends BaseModel {
    * Create an order with its items atomically.
    * Called from the Stripe webhook handler ONLY — never from the frontend directly.
    */
-  async createWithItems({ projectRef, customerId, items, totalCents, paymentIntentId, scheduledFor }) {
+  async createWithItems({ projectRef, shopId, customerId, items, totalCents, paymentIntentId, scheduledFor }) {
     const orderId = uuidv4();
     const now = new Date().toISOString();
 
@@ -62,6 +77,7 @@ class OrderModel extends BaseModel {
     const order = await super.create({
       id: orderId,
       project_ref: projectRef,
+      shop_id: shopId || null,
       customer_id: customerId || null,
       status,
       payment_status: paymentIntentId ? 'paid' : 'unpaid',

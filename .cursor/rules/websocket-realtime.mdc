@@ -1,0 +1,60 @@
+---
+description: WebSocket real-time communication patterns and event reference
+globs: apps/server/websocket/**,apps/server/controllers/**,packages/api/src/ws.ts,apps/*/src/providers/ws-provider*
+alwaysApply: false
+---
+
+# WebSocket & Real-Time Patterns
+
+## Server Architecture
+
+- Single endpoint: `ws://host/ws`, project-scoped.
+- Auth: cookies (`admin_session` / `customer_session`) or JWT query param (`?token=...`).
+- In-memory connection registry keyed by `{projectRef, connectionId}`.
+- Heartbeat: 30s server ping; stale connections auto-terminated.
+
+## Broadcasting from Controllers
+
+After any state change, broadcast via the WS server helpers:
+
+```js
+const { broadcast, sendToUser } = require('../websocket/ws-server');
+broadcast(projectRef, { type: 'order:status_changed', orderId, status, previousStatus });
+sendToUser(projectRef, userId, { type: 'chat:message', conversationId, message });
+```
+
+If the recipient is offline, trigger push notification via `notification.service.js`.
+
+## Event Type Reference
+
+| Event | Trigger | Key Fields |
+|---|---|---|
+| `order:status_changed` | Order status transition | `orderId, status, previousStatus, updatedAt` |
+| `order:rejected` | Vendor rejects order | `orderId, reason?` |
+| `order:delayed` | SLA deadline missed | `orderId, slaDeadline` |
+| `delivery:location_update` | Rider GPS ping | `deliveryId, lat, lon, heading?, speed?` |
+| `delivery:rider_arrived` | Rider taps arrived | `deliveryId, orderId` |
+| `delivery:request` | New delivery available | `deliveryId, orderId, vendorLat?, vendorLon?` |
+| `chat:message` | New chat message | `conversationId, message` |
+| `chat:read` | Message marked read | `conversationId, userId, readAt` |
+| `chat:typing` | Typing indicator | `conversationId, userId, isTyping` |
+
+## Client-Side Pattern
+
+Frontend providers (`ws-provider.tsx`) subscribe to events and invalidate TanStack Query caches:
+
+```tsx
+useEffect(() => {
+  const unsub = wsClient.subscribe('order:status_changed', () => {
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+  });
+  return unsub;
+}, []);
+```
+
+## Adding a New Event Type
+
+1. Define the interface in `packages/types/src/index.ts` and add to the `WSEvent` union.
+2. Broadcast from the relevant controller using `broadcast()` or `sendToUser()`.
+3. Subscribe in the appropriate `ws-provider.tsx` and invalidate the right queries.
+4. Handle offline fallback via push notification if needed.

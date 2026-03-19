@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { PackageCheck, Bike, Clock, MessageCircle, User } from "lucide-react";
+import { PackageCheck, Bike, Clock, MessageCircle, User, MapPin } from "lucide-react";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRiderAvailabilityLocation } from "@/hooks/use-rider-availability";
@@ -12,9 +12,9 @@ import { Skeleton, cn } from "@delivio/ui";
 const navItems = [
   { href: "/", label: "Available", icon: PackageCheck },
   { href: "/active", label: "Active", icon: Bike },
+  { href: "/geofence", label: "Zone", icon: MapPin },
   { href: "/history", label: "History", icon: Clock },
   { href: "/chat", label: "Chat", icon: MessageCircle },
-  { href: "/account", label: "Account", icon: User },
 ];
 
 export default function MainLayout({

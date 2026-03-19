@@ -35,6 +35,49 @@ export interface CustomerAddress {
   createdAt: string;
 }
 
+// ─── Geo ──────────────────────────────────────────────────────────────────────
+
+export interface GeoPolygon {
+  type: "Polygon";
+  coordinates: number[][][];
+}
+
+// ─── Shops ────────────────────────────────────────────────────────────────────
+
+export interface Shop {
+  id: string;
+  projectRef: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  address?: string;
+  phone?: string;
+  lat?: number;
+  lon?: number;
+  deliveryGeofence?: GeoPolygon | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RiderGeofence {
+  id: string;
+  userId: string;
+  projectRef: string;
+  geofence: GeoPolygon;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserShop {
+  id: string;
+  userId: string;
+  shopId: string;
+  createdAt: string;
+}
+
 // ─── Orders ────────────────────────────────────────────────────────────────────
 
 export type OrderStatus =
@@ -64,6 +107,7 @@ export interface OrderDelivery {
 export interface Order {
   id: string;
   projectRef: string;
+  shopId?: string;
   customerId: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
@@ -84,6 +128,7 @@ export interface Order {
   items?: OrderItem[];
   delivery?: OrderDelivery;
   vendorId?: string;
+  shop?: Shop;
 }
 
 export interface OrderItem {
@@ -100,6 +145,7 @@ export interface OrderItem {
 export interface CartSession {
   id: string;
   projectRef: string;
+  shopId?: string;
   customerId?: string;
   createdAt: string;
 }
@@ -176,10 +222,11 @@ export type DeliveryMode = "third_party" | "vendor_rider";
 export interface VendorSettings {
   id: string;
   projectRef: string;
+  shopId?: string;
   autoAccept: boolean;
   defaultPrepTimeMinutes: number;
   deliveryMode: DeliveryMode;
-  deliveryRadiusKm: number;
+  autoDispatchDelayMinutes?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -214,6 +261,7 @@ export interface Message {
 export interface Product {
   id: string;
   projectRef: string;
+  shopId?: string;
   name: string;
   description?: string;
   priceCents: number;
@@ -228,6 +276,7 @@ export interface Product {
 export interface Category {
   id: string;
   projectRef: string;
+  shopId?: string;
   name: string;
   sortOrder?: number;
   createdAt: string;

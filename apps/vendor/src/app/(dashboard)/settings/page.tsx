@@ -12,23 +12,24 @@ import {
   CardDescription,
   CardContent,
   Input,
-  Separator,
   Skeleton,
+  cn,
 } from "@delivio/ui";
 import type { VendorSettings, DeliveryMode } from "@delivio/types";
 import { api } from "@/lib/api";
+import { useShopStore } from "@/stores/shop-store";
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const activeShop = useShopStore((s) => s.activeShop);
   const { data: settings, isLoading } = useQuery<VendorSettings>({
-    queryKey: ["vendor-settings"],
-    queryFn: () => api.vendorSettings.get(),
+    queryKey: ["vendor-settings", activeShop?.id],
+    queryFn: () => api.vendorSettings.get(activeShop?.id),
   });
 
   const [autoAccept, setAutoAccept] = useState(false);
   const [prepTime, setPrepTime] = useState(15);
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("third_party");
-  const [deliveryRadius, setDeliveryRadius] = useState(5);
   const [autoDispatchDelay, setAutoDispatchDelay] = useState(0);
   const [saving, setSaving] = useState(false);
 
@@ -37,8 +38,7 @@ export default function SettingsPage() {
       setAutoAccept(settings.autoAccept);
       setPrepTime(settings.defaultPrepTimeMinutes ?? 15);
       setDeliveryMode(settings.deliveryMode ?? "third_party");
-      setDeliveryRadius(settings.deliveryRadiusKm ?? 5);
-      setAutoDispatchDelay((settings as VendorSettings & { autoDispatchDelayMinutes?: number }).autoDispatchDelayMinutes ?? 0);
+      setAutoDispatchDelay(settings.autoDispatchDelayMinutes ?? 0);
     }
   }, [settings]);
 
@@ -49,11 +49,10 @@ export default function SettingsPage() {
         autoAccept,
         defaultPrepTimeMinutes: prepTime,
         deliveryMode,
-        deliveryRadiusKm: deliveryRadius,
         autoDispatchDelayMinutes: autoDispatchDelay,
-      });
+      }, activeShop?.id);
       toast.success("Settings saved");
-      queryClient.invalidateQueries({ queryKey: ["vendor-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-settings", activeShop?.id] });
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "message" in err
@@ -67,57 +66,61 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 p-4 md:p-6">
+      <div className="mx-auto max-w-xl space-y-4">
         <Skeleton className="h-8 w-1/3" />
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-lg" />
+          <Skeleton key={i} className="h-32 w-full rounded-xl" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-xl p-4 md:p-6 space-y-6">
+    <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Configure your restaurant preferences
         </p>
       </div>
 
       {/* Auto-accept */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Auto-Accept Orders</CardTitle>
-          <CardDescription>
-            Automatically accept incoming orders without manual review
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold">Auto-Accept Orders</CardTitle>
+              <CardDescription className="mt-1">
+                Automatically accept incoming orders without manual review
+              </CardDescription>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoAccept}
+              onClick={() => setAutoAccept(!autoAccept)}
+              className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                autoAccept ? "bg-primary" : "bg-input"
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none block size-5 rounded-full bg-white shadow-sm ring-0 transition-transform",
+                  autoAccept ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoAccept}
-            onClick={() => setAutoAccept(!autoAccept)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              autoAccept ? "bg-primary" : "bg-input"
-            }`}
-          >
-            <span
-              className={`pointer-events-none block size-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
-                autoAccept ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
-        </CardContent>
       </Card>
 
       {/* Prep time */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Default Prep Time</CardTitle>
-          <CardDescription>
-            Average time to prepare an order (in minutes)
+          <CardTitle className="text-base font-semibold">Default Prep Time</CardTitle>
+          <CardDescription className="mt-1">
+            Average time to prepare an order
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -136,22 +139,35 @@ export default function SettingsPage() {
       </Card>
 
       {/* Delivery mode */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Delivery Mode</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-base font-semibold">Delivery Mode</CardTitle>
+          <CardDescription className="mt-1">
             How orders are delivered to customers
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+        <CardContent className="space-y-2">
+          <label className={cn(
+            "flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all",
+            deliveryMode === "third_party"
+              ? "border-primary bg-primary/5 shadow-sm"
+              : "border-border/60 hover:bg-muted/50"
+          )}>
+            <div className={cn(
+              "flex size-5 items-center justify-center rounded-full border-2 transition-colors",
+              deliveryMode === "third_party" ? "border-primary" : "border-muted-foreground/30"
+            )}>
+              {deliveryMode === "third_party" && (
+                <div className="size-2.5 rounded-full bg-primary" />
+              )}
+            </div>
             <input
               type="radio"
               name="deliveryMode"
               value="third_party"
               checked={deliveryMode === "third_party"}
               onChange={() => setDeliveryMode("third_party")}
-              className="size-4 accent-primary"
+              className="sr-only"
             />
             <div>
               <p className="text-sm font-medium">Third-Party Riders</p>
@@ -160,14 +176,27 @@ export default function SettingsPage() {
               </p>
             </div>
           </label>
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+          <label className={cn(
+            "flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all",
+            deliveryMode === "vendor_rider"
+              ? "border-primary bg-primary/5 shadow-sm"
+              : "border-border/60 hover:bg-muted/50"
+          )}>
+            <div className={cn(
+              "flex size-5 items-center justify-center rounded-full border-2 transition-colors",
+              deliveryMode === "vendor_rider" ? "border-primary" : "border-muted-foreground/30"
+            )}>
+              {deliveryMode === "vendor_rider" && (
+                <div className="size-2.5 rounded-full bg-primary" />
+              )}
+            </div>
             <input
               type="radio"
               name="deliveryMode"
               value="vendor_rider"
               checked={deliveryMode === "vendor_rider"}
               onChange={() => setDeliveryMode("vendor_rider")}
-              className="size-4 accent-primary"
+              className="sr-only"
             />
             <div>
               <p className="text-sm font-medium">Own Riders</p>
@@ -179,38 +208,12 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Delivery radius */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Delivery Radius</CardTitle>
-          <CardDescription>
-            Maximum distance for delivery orders
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={1}
-              max={30}
-              step={0.5}
-              value={deliveryRadius}
-              onChange={(e) => setDeliveryRadius(Number(e.target.value))}
-              className="flex-1 accent-primary"
-            />
-            <span className="w-16 text-right text-sm font-medium tabular-nums">
-              {deliveryRadius} km
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Auto-dispatch delay */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Auto-Dispatch Delay</CardTitle>
-          <CardDescription>
-            Minutes to wait after marking an order ready before auto-dispatching a rider. Set to 0 for immediate dispatch.
+          <CardTitle className="text-base font-semibold">Auto-Dispatch Delay</CardTitle>
+          <CardDescription className="mt-1">
+            Minutes to wait after marking ready before auto-dispatching. Set to 0 for immediate.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -227,8 +230,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      <Separator />
 
       <Button
         className="w-full gap-2"

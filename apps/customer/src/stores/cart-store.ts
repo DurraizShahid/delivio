@@ -15,8 +15,10 @@ const safeStorage = createJSONStorage(() =>
 interface CartState {
   items: CartItem[];
   projectRef: string | null;
+  shopId: string | null;
   setItems: (items: CartItem[]) => void;
   setProjectRef: (ref: string) => void;
+  setShopId: (shopId: string) => void;
   addItem: (item: CartItem) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
@@ -30,9 +32,11 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       projectRef: null,
+      shopId: null,
 
       setItems: (items) => set({ items }),
       setProjectRef: (ref) => set({ projectRef: ref }),
+      setShopId: (shopId) => set({ shopId }),
 
       addItem: (item) => {
         const existing = get().items.find(
@@ -66,7 +70,7 @@ export const useCartStore = create<CartState>()(
       removeItem: (itemId) =>
         set({ items: get().items.filter((i) => i.id !== itemId) }),
 
-      clear: () => set({ items: [], projectRef: null }),
+      clear: () => set({ items: [], projectRef: null, shopId: null }),
 
       totalCents: () =>
         get().items.reduce(

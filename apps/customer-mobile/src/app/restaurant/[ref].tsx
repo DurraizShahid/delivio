@@ -14,29 +14,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "@/lib/api";
 import { useCartStore } from "@/stores/cart-store";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
-import type { Product, Workspace } from "@delivio/types";
+import type { Product, Shop } from "@delivio/types";
 
 function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 export default function RestaurantScreen() {
-  const { ref } = useLocalSearchParams<{ ref: string }>();
+  const { ref, shopId } = useLocalSearchParams<{ ref: string; shopId?: string }>();
 
   const addItem = useCartStore((s) => s.addItem);
-  const projectRef = useCartStore((s) => s.projectRef);
+  const cartShopId = useCartStore((s) => s.shopId);
   const setProjectRef = useCartStore((s) => s.setProjectRef);
+  const setShopId = useCartStore((s) => s.setShopId);
   const clear = useCartStore((s) => s.clear);
 
-  const { data: workspace, isLoading: loadingWorkspace } = useQuery<Workspace>({
-    queryKey: ["workspace", ref],
-    queryFn: () => api.public.workspace(ref!),
-    enabled: !!ref,
+  const { data: shop, isLoading: loadingShop } = useQuery<Shop>({
+    queryKey: ["shop", ref, shopId],
+    queryFn: () => api.public.shopDetail(ref!, shopId!),
+    enabled: !!ref && !!shopId,
   });
 
   const { data: products, isLoading: loadingProducts } = useQuery<Product[]>({
-    queryKey: ["products", ref],
-    queryFn: () => api.public.products(ref!),
+    queryKey: ["products", ref, shopId],
+    queryFn: () =>
+      shopId
+        ? api.public.shopProducts(ref!, shopId)
+        : api.public.products(ref!),
     enabled: !!ref,
   });
 
@@ -53,10 +57,10 @@ export default function RestaurantScreen() {
   }, [products]);
 
   function handleAddToCart(product: Product) {
-    if (projectRef && projectRef !== ref) {
+    if (cartShopId && shopId && cartShopId !== shopId) {
       Alert.alert(
-        "Different restaurant",
-        "Your cart has items from another restaurant. Clear cart and add this item?",
+        "Different shop",
+        "Your cart has items from another shop. Clear cart and add this item?",
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -65,6 +69,7 @@ export default function RestaurantScreen() {
             onPress: () => {
               clear();
               setProjectRef(ref!);
+              if (shopId) setShopId(shopId);
               addItem({
                 id: `local-${Date.now()}`,
                 sessionId: "",
@@ -81,7 +86,8 @@ export default function RestaurantScreen() {
       return;
     }
 
-    if (!projectRef) setProjectRef(ref!);
+    setProjectRef(ref!);
+    if (shopId) setShopId(shopId);
     addItem({
       id: `local-${Date.now()}`,
       sessionId: "",
@@ -93,14 +99,14 @@ export default function RestaurantScreen() {
     });
   }
 
-  const isLoading = loadingWorkspace || loadingProducts;
+  const isLoading = loadingShop || loadingProducts;
 
   return (
     <>
       <Stack.Screen
         options={{
           headerShown: true,
-          title: workspace?.name || "Restaurant",
+          title: shop?.name || "Restaurant",
           headerBackTitle: "Back",
         }}
       />
@@ -117,17 +123,19 @@ export default function RestaurantScreen() {
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
           ListHeaderComponent={
-            workspace?.description ? (
+            shop ? (
               <View style={styles.descriptionBox}>
-                <Text style={styles.description}>{workspace.description}</Text>
-                {workspace.address && (
+                {shop.description && (
+                  <Text style={styles.description}>{shop.description}</Text>
+                )}
+                {shop.address && (
                   <View style={styles.addressRow}>
                     <Ionicons
                       name="location-outline"
                       size={14}
                       color={colors.mutedForeground}
                     />
-                    <Text style={styles.addressText}>{workspace.address}</Text>
+                    <Text style={styles.addressText}>{shop.address}</Text>
                   </View>
                 )}
               </View>

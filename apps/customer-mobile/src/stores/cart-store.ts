@@ -4,8 +4,10 @@ import type { CartItem } from "@delivio/types";
 interface CartState {
   items: CartItem[];
   projectRef: string | null;
+  shopId: string | null;
   setItems: (items: CartItem[]) => void;
   setProjectRef: (ref: string) => void;
+  setShopId: (shopId: string) => void;
   addItem: (item: CartItem) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
@@ -17,8 +19,10 @@ interface CartState {
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   projectRef: null,
+  shopId: null,
   setItems: (items) => set({ items }),
   setProjectRef: (ref) => set({ projectRef: ref }),
+  setShopId: (shopId) => set({ shopId }),
   addItem: (item) => {
     const existing = get().items.find((i) => i.productId === item.productId);
     if (existing) {
@@ -41,7 +45,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
   removeItem: (itemId) => set({ items: get().items.filter((i) => i.id !== itemId) }),
-  clear: () => set({ items: [], projectRef: null }),
+  clear: () => set({ items: [], projectRef: null, shopId: null }),
   totalCents: () => get().items.reduce((sum, i) => sum + i.unitPriceCents * i.quantity, 0),
   itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 }));

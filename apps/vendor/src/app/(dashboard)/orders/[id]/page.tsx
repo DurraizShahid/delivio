@@ -80,17 +80,17 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 p-4 md:p-6">
+      <div className="mx-auto max-w-2xl space-y-4">
         <Skeleton className="h-6 w-1/3" />
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <Skeleton className="h-48 w-full rounded-lg" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="mx-auto max-w-2xl p-4 md:p-6 text-center">
+      <div className="mx-auto max-w-2xl text-center py-16">
         <p className="text-muted-foreground">Order not found</p>
       </div>
     );
@@ -102,25 +102,33 @@ export default function OrderDetailPage() {
   const isTerminal = isCancelled || isRejected;
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6 space-y-4">
+    <div className="mx-auto max-w-2xl space-y-5">
       <button
         onClick={() => router.back()}
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ArrowLeft className="size-4" /> Back
+        <ArrowLeft className="size-4" /> Back to orders
       </button>
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Order #{order.id.slice(0, 8)}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Order #{order.id.slice(0, 8)}</h1>
         <OrderStatusBadge status={order.status} />
       </div>
 
       {/* SLA Timer */}
       {order.slaDeadline && !isTerminal && (
-        <Card className={slaRemaining && slaRemaining <= 0 ? "border-destructive" : ""}>
-          <CardContent className="flex items-center gap-3 p-3">
-            <Clock className={`size-4 ${slaRemaining && slaRemaining <= 0 ? "text-destructive" : "text-orange-500"}`} />
+        <Card className={cn(
+          "shadow-sm border-border/60",
+          slaRemaining && slaRemaining <= 0 ? "border-destructive/50 bg-destructive/5" : "bg-amber-50/50"
+        )}>
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className={cn(
+              "flex size-9 items-center justify-center rounded-xl",
+              slaRemaining && slaRemaining <= 0 ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-600"
+            )}>
+              <Clock className="size-4" />
+            </div>
             <div className="text-sm">
               {slaRemaining && slaRemaining > 0 ? (
                 <span>
@@ -141,25 +149,25 @@ export default function OrderDetailPage() {
 
       {/* Progress steps */}
       {!isTerminal && (
-        <Card>
-          <CardContent className="p-4">
+        <Card className="shadow-sm border-border/60">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               {VENDOR_STEPS.map((step, idx) => (
                 <div key={step.status} className="flex flex-1 items-center">
                   <div className="flex flex-col items-center">
                     <div
                       className={cn(
-                        "flex size-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors",
+                        "flex size-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors",
                         idx <= currentStep
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-muted-foreground/30 text-muted-foreground"
+                          : "border-border text-muted-foreground"
                       )}
                     >
                       {idx + 1}
                     </div>
                     <span
                       className={cn(
-                        "mt-1 text-[10px] leading-tight text-center",
+                        "mt-1.5 text-[10px] leading-tight text-center",
                         idx <= currentStep
                           ? "font-medium text-foreground"
                           : "text-muted-foreground"
@@ -171,8 +179,8 @@ export default function OrderDetailPage() {
                   {idx < VENDOR_STEPS.length - 1 && (
                     <div
                       className={cn(
-                        "mx-1 h-0.5 flex-1",
-                        idx < currentStep ? "bg-primary" : "bg-muted"
+                        "mx-1 h-0.5 flex-1 rounded-full",
+                        idx < currentStep ? "bg-primary" : "bg-border"
                       )}
                     />
                   )}
@@ -185,7 +193,7 @@ export default function OrderDetailPage() {
 
       {/* Action buttons */}
       {!isTerminal && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardContent className="flex flex-wrap gap-2 p-4">
             {order.status === "placed" && (
               <>
@@ -229,7 +237,7 @@ export default function OrderDetailPage() {
 
       {/* Reject form */}
       {showRejectForm && order.status === "placed" && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardContent className="space-y-3 p-4">
             <p className="text-sm font-medium">Reason for rejection</p>
             <Input
@@ -261,37 +269,41 @@ export default function OrderDetailPage() {
 
       {/* Rejection / cancellation notice */}
       {isRejected && order.rejectionReason && (
-        <Card className="border-destructive">
+        <Card className="border-destructive/50 bg-destructive/5 shadow-sm">
           <CardContent className="flex items-start gap-3 p-4">
-            <AlertTriangle className="mt-0.5 size-4 text-destructive shrink-0" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10">
+              <AlertTriangle className="size-4 text-destructive" />
+            </div>
             <div>
               <p className="text-sm font-medium text-destructive">Rejected</p>
-              <p className="text-sm text-muted-foreground">{order.rejectionReason}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{order.rejectionReason}</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCancelled && order.cancellationReason && (
-        <Card className="border-destructive">
+        <Card className="border-destructive/50 bg-destructive/5 shadow-sm">
           <CardContent className="flex items-start gap-3 p-4">
-            <AlertTriangle className="mt-0.5 size-4 text-destructive shrink-0" />
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10">
+              <AlertTriangle className="size-4 text-destructive" />
+            </div>
             <div>
               <p className="text-sm font-medium text-destructive">Cancelled</p>
-              <p className="text-sm text-muted-foreground">{order.cancellationReason}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{order.cancellationReason}</p>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Items */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Items</CardTitle>
+          <CardTitle className="text-base font-semibold">Items</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           {order.items?.map((item) => (
             <div key={item.id} className="flex justify-between text-sm">
-              <span>
+              <span className="text-muted-foreground">
                 {item.name} &times; {item.quantity}
               </span>
               <PriceDisplay cents={item.unitPriceCents * item.quantity} />
@@ -306,14 +318,14 @@ export default function OrderDetailPage() {
       </Card>
 
       {/* Order meta */}
-      <Card>
+      <Card className="shadow-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-base">Details</CardTitle>
+          <CardTitle className="text-base font-semibold">Details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Order ID</span>
-            <span className="font-mono text-xs">{order.id}</span>
+            <span className="font-mono text-xs text-muted-foreground">{order.id}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Customer</span>
@@ -344,9 +356,11 @@ export default function OrderDetailPage() {
 
       {/* Delivery status */}
       {order.deliveryMode && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardContent className="flex items-center gap-3 p-4">
-            <Truck className="size-4 text-muted-foreground" />
+            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <Truck className="size-4" />
+            </div>
             <div className="text-sm">
               <p className="font-medium">Delivery</p>
               <p className="text-muted-foreground capitalize">
@@ -359,11 +373,11 @@ export default function OrderDetailPage() {
 
       {/* Extend SLA */}
       {(order.status === "accepted" || order.status === "preparing") && order.slaDeadline && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardContent className="space-y-3 p-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium flex items-center gap-2">
-                <TimerReset className="size-4" /> Extend Prep Time
+                <TimerReset className="size-4 text-muted-foreground" /> Extend Prep Time
               </p>
               {!showExtendForm && (
                 <Button size="sm" variant="outline" onClick={() => setShowExtendForm(true)}>
@@ -373,8 +387,8 @@ export default function OrderDetailPage() {
             </div>
             {showExtendForm && (
               <div className="flex items-end gap-2">
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">Additional minutes</label>
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Additional minutes</label>
                   <Input
                     type="number"
                     min={1}
@@ -406,10 +420,10 @@ export default function OrderDetailPage() {
 
       {/* Reassign Rider */}
       {order.delivery?.riderId && (order.delivery.status === "assigned" || order.delivery.status === "picked_up") && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardContent className="flex items-center justify-between p-4">
             <p className="text-sm font-medium flex items-center gap-2">
-              <RefreshCw className="size-4" /> Reassign Rider
+              <RefreshCw className="size-4 text-muted-foreground" /> Reassign Rider
             </p>
             <Button
               size="sm"
@@ -431,23 +445,23 @@ export default function OrderDetailPage() {
 
       {/* Assign External Rider */}
       {order.deliveryMode === "vendor_rider" && order.delivery && (
-        <Card>
+        <Card className="shadow-sm border-border/60">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserPlus className="size-4" /> Assign External Rider
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <UserPlus className="size-4 text-muted-foreground" /> Assign External Rider
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Rider name</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Rider name</label>
               <Input
                 placeholder="e.g. John"
                 value={externalName}
                 onChange={(e) => setExternalName(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Rider phone</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Rider phone</label>
               <Input
                 placeholder="e.g. +44 7700 900000"
                 value={externalPhone}

@@ -1,0 +1,64 @@
+---
+description: Database schema, models, and migration patterns for the Delivio multi-tenant DB
+globs: apps/server/migrations/**,apps/server/models/**
+alwaysApply: false
+---
+
+# Database & Migration Patterns
+
+## Multi-Tenant Schema
+
+Every tenant-scoped table **must** include `project_ref TEXT NOT NULL`. Core tables:
+
+`workspaces`, `shops`, `user_shops`, `app_users`, `customers`, `orders`, `order_items`, `deliveries`, `cart_sessions`, `cart_items`, `conversations`, `messages`, `products`, `categories`, `rider_locations`, `push_tokens`, `audit_log`, `admin_settings`, `vendor_settings`, `block_content`.
+
+Shop-scoped tables (have both `project_ref` and `shop_id`): `products`, `categories`, `orders`, `cart_sessions`, `vendor_settings`.
+
+Global tables (no project_ref): `stripe_events`, `schema_migrations`.
+
+## Writing Migrations
+
+- File naming: `NNN_description.sql` (sequential, zero-padded to 3 digits).
+- Place in `apps/server/migrations/`.
+- Runner: `migrations/runner.js` — tracks applied migrations in `schema_migrations`.
+- Migrations must be **idempotent** where possible (`IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
+- Prefer additive changes; avoid dropping columns in production.
+- Add indexes for `project_ref` and frequently filtered columns.
+
+## Model Pattern (BaseModel)
+
+Models in `models/` extend `BaseModel` which provides:
+- `findById(id, cols)`, `findOne(filters, cols)`, `findMany(filters, options)`
+- `create(data)`, `updateById(id, data)`, `deleteById(id)`, `count(filters)`
+
+Domain models add workspace-aware methods. Example pattern:
+
+```js
+class OrderModel extends BaseModel {
+  constructor() { super('orders'); }
+  findByProjectRef(projectRef, filters) { /* scoped query */ }
+  validateTransition(from, to) { /* enforce state machine */ }
+}
+```
+
+## Order Status State Machine
+
+```
+scheduled → placed → accepted → preparing → ready → assigned → picked_up → arrived → completed
+                   ↘ rejected
+                   ↘ cancelled
+```
+
+Always validate transitions via `OrderModel.validateTransition()`.
+
+## Data Conventions
+
+- Monetary values: integer **cents** (`price_cents`, `total_cents`, `unit_price_cents`).
+- UUIDs for all primary keys.
+- Timestamps: `timestamptz` with `created_at` / `updated_at`.
+- Check constraints for enums (status, role, payment_status).
+- Cascade deletes for child rows (order_items, cart_items, messages).
+
+## Audit Logging
+
+Use `lib/audit.js` → `writeAuditLog(workspaceId, actorType, actorId, action, metadata)` for sensitive actions (login, status change, refund, settings update). Writes must not fail the request.

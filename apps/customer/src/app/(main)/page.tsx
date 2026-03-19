@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { Search, MapPin, Store } from "lucide-react";
+import { Search, MapPin, Store, LocateFixed } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Input,
@@ -10,9 +10,10 @@ import {
   CardContent,
   Skeleton,
   EmptyState,
+  Button,
 } from "@delivio/ui";
 import { api } from "@/lib/api";
-import type { Workspace } from "@delivio/types";
+import type { Shop } from "@delivio/types";
 
 const DEMO_REFS = (
   process.env.NEXT_PUBLIC_RESTAURANT_REFS || "demo"
@@ -20,37 +21,65 @@ const DEMO_REFS = (
   .split(",")
   .map((r) => r.trim())
   .filter(Boolean)
-  // Ensure stable unique keys + avoid duplicate fetches
   .filter((ref, idx, arr) => arr.indexOf(ref) === idx);
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
+  const [customerLat, setCustomerLat] = useState<number | null>(null);
+  const [customerLon, setCustomerLon] = useState<number | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
 
-  const { data: restaurants, isLoading } = useQuery<Workspace[]>({
-    queryKey: ["restaurants"],
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("denied");
+      return;
+    }
+    setLocationStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCustomerLat(pos.coords.latitude);
+        setCustomerLon(pos.coords.longitude);
+        setLocationStatus("granted");
+      },
+      () => {
+        setLocationStatus("denied");
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  }, []);
+
+  const { data: shops, isLoading } = useQuery<Shop[]>({
+    queryKey: ["all-shops", customerLat, customerLon],
     queryFn: async () => {
       const results = await Promise.allSettled(
-        DEMO_REFS.map((ref) => api.public.workspace(ref))
+        DEMO_REFS.map((ref) =>
+          api.public.shops(
+            ref,
+            customerLat ?? undefined,
+            customerLon ?? undefined
+          )
+        )
       );
       return results
         .filter(
-          (r): r is PromiseFulfilledResult<Workspace> =>
+          (r): r is PromiseFulfilledResult<Shop[]> =>
             r.status === "fulfilled"
         )
-        .map((r) => r.value);
+        .flatMap((r) => r.value);
     },
   });
 
   const filtered = useMemo(() => {
-    if (!restaurants) return [];
-    if (!search.trim()) return restaurants;
+    if (!shops) return [];
+    if (!search.trim()) return shops;
     const q = search.toLowerCase();
-    return restaurants.filter(
-      (r) =>
-        r.name?.toLowerCase().includes(q) ||
-        r.description?.toLowerCase().includes(q)
+    return shops.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.description?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q)
     );
-  }, [restaurants, search]);
+  }, [shops, search]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 pt-6">
@@ -63,17 +92,24 @@ export default function HomePage() {
         </p>
       </div>
 
+      {locationStatus === "denied" && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <LocateFixed className="size-4 shrink-0" />
+          <span>Enable location access to see restaurants that deliver to your area.</span>
+        </div>
+      )}
+
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search restaurants..."
+          placeholder="Search shops..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10"
         />
       </div>
 
-      {isLoading ? (
+      {isLoading || locationStatus === "loading" ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -88,25 +124,27 @@ export default function HomePage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<Store />}
-          title="No restaurants found"
+          title="No shops found"
           description={
             search
               ? "Try a different search term"
-              : "No restaurants are available right now"
+              : customerLat
+                ? "No restaurants deliver to your area right now"
+                : "No shops are available right now"
           }
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((restaurant) => (
+          {filtered.map((shop) => (
             <Link
-              key={restaurant.id}
-              href={`/restaurant/${restaurant.projectRef}`}
+              key={shop.id}
+              href={`/restaurant/${shop.projectRef}/${shop.id}`}
             >
               <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                {restaurant.bannerUrl ? (
+                {shop.bannerUrl ? (
                   <img
-                    src={restaurant.bannerUrl}
-                    alt={restaurant.name}
+                    src={shop.bannerUrl}
+                    alt={shop.name}
                     className="h-36 w-full object-cover"
                   />
                 ) : (
@@ -117,26 +155,26 @@ export default function HomePage() {
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold">{restaurant.name}</h3>
-                      {restaurant.description && (
+                      <h3 className="font-semibold">{shop.name}</h3>
+                      {shop.description && (
                         <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1">
-                          {restaurant.description}
+                          {shop.description}
                         </p>
                       )}
                     </div>
-                    {restaurant.logoUrl && (
+                    {shop.logoUrl && (
                       <img
-                        src={restaurant.logoUrl}
+                        src={shop.logoUrl}
                         alt=""
                         className="size-10 rounded-lg object-cover"
                       />
                     )}
                   </div>
-                  {restaurant.address && (
+                  {shop.address && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="size-3" />
                       <span className="line-clamp-1">
-                        {restaurant.address}
+                        {shop.address}
                       </span>
                     </div>
                   )}

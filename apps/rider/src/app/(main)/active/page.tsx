@@ -180,9 +180,7 @@ export default function ActiveDeliveryPage() {
             <div className="flex items-center gap-3">
               <MapPin className="size-4 shrink-0 text-muted-foreground" />
               <span className="text-sm">
-                {delivery.zoneId
-                  ? `Zone: ${delivery.zoneId}`
-                  : "Delivery location"}
+                Pickup: {(delivery as any).shopName || (delivery as any).shopAddress || delivery.zoneId || "Restaurant"}
               </span>
             </div>
             {delivery.etaMinutes && (

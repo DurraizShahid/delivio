@@ -1,0 +1,68 @@
+---
+description: Next.js web app patterns for Customer and Rider apps
+globs: apps/customer/**,apps/rider/**
+alwaysApply: false
+---
+
+# Frontend Next.js Conventions
+
+## Apps
+
+| App | Port | Path |
+|---|---|---|
+| Customer | 3000 | `apps/customer/` |
+| Vendor | 3001 | `apps/vendor/` |
+| Rider | 3002 | `apps/rider/` |
+
+All share `@delivio/api`, `@delivio/types`, `@delivio/ui`.
+
+## State Management
+
+- **Zustand** for client-only state (auth store, cart store with persistence, shop store for active shop context).
+- **TanStack Query** for all server data — use `useQuery` / `useMutation` hooks.
+- Never duplicate server state in Zustand; let TanStack Query be the source of truth.
+- **Shop context:** Vendor app uses `useShopStore` (Zustand) to track the active shop. All shop-scoped queries (orders, catalog, settings) include `activeShop?.id` in query keys and API calls. Customer apps track `shopId` in the cart store.
+
+## Real-Time Updates
+
+- `WSProvider` (in `src/providers/ws-provider.tsx`) creates a WebSocket client on mount.
+- Subscribe to events and **invalidate queries** on receipt:
+  - `order:status_changed` → invalidate orders queries.
+  - `order:rejected`, `order:delayed` → invalidate + show toast.
+  - `chat:message` → invalidate conversations/messages queries.
+  - `delivery:request`, `delivery:location_update` → invalidate deliveries queries.
+
+## UI Components
+
+- Use **shadcn/ui** components from `@delivio/ui` or local `components/ui/`.
+- Icons: **Lucide** only.
+- Mobile-first responsive design; test at 375px minimum.
+- Always handle loading, error, and empty states.
+
+## Auth Flow (Customer App)
+
+1. OTP send → verify → `customer_session` cookie set.
+2. `auth-store` (Zustand) hydrates from `/api/auth/customer/session` on mount.
+3. Protect checkout and order pages with auth checks.
+4. Cart merges from anonymous to authenticated on login.
+
+## Auth Flow (Rider App)
+
+1. Email/password login → `admin_session` cookie.
+2. Session check on mount via `/api/auth/session`.
+3. Rider-specific pages gated by `requireRole('rider')`.
+
+## API Calls
+
+Use `@delivio/api` client — it handles base URL, cookies, and error formatting. Example:
+
+```ts
+import { api } from '@delivio/api';
+const orders = await api.orders.list({ status: 'placed' });
+```
+
+## Data Patterns
+
+- Prices displayed from cents: `(priceCents / 100).toFixed(2)`.
+- Dates: use relative time for recent, absolute for older.
+- Pagination: offset-based for orders, page-based for chat messages.

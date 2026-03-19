@@ -1,0 +1,73 @@
+---
+description: Express backend patterns — routes, controllers, middleware, services, jobs
+globs: apps/server/**
+alwaysApply: false
+---
+
+# Backend Server Conventions
+
+## Architecture Layers
+
+```
+routes/ → middleware (auth, validate, rate-limit, project-ref) → controllers/ → models/ + services/
+```
+
+- **Routes** mount sub-routers under `/api`, apply middleware, and delegate to controllers.
+- **Controllers** contain business logic; never access the DB directly — use models.
+- **Models** extend `BaseModel` (`models/base.model.js`) and wrap Supabase REST calls.
+- **Services** integrate external APIs (Stripe, Twilio, email, push, session store).
+
+## Adding a New Endpoint
+
+1. Add a Zod schema in `validators/<feature>.validator.js`.
+2. Add a route in `routes/<feature>.routes.js` using middleware:
+   ```js
+   router.post('/', attachProjectRef, requireProjectRef, requireAnyAuth, validate(schema), controller.action);
+   ```
+3. Implement the handler in `controllers/<feature>.controller.js`.
+4. If new data is needed, add/update a model in `models/` and a migration in `migrations/`.
+
+## Middleware Order
+
+Apply in this order: rate limiter → `parseSession` → auth guard → `attachProjectRef` → `requireProjectRef` → `attachShopId` → `requireShopId` → `requireShopAccess` → `validate(schema)` → controller.
+
+For shop-scoped routes (catalog, vendor-settings), include `attachShopId`, `requireShopId`, and `requireShopAccess` from `middleware/shop.middleware.js`.
+
+## Auth Guards
+
+| Guard | Use when |
+|---|---|
+| `requireAdmin` | Admin-only routes |
+| `requireRole('vendor','admin')` | Role-restricted routes |
+| `requireCustomer` | Customer-only routes |
+| `requireAnyAuth` | Any authenticated user |
+
+## Error Responses
+
+Return consistent JSON: `{ error: "message" }` with appropriate HTTP status.
+
+## Background Jobs
+
+Jobs live in `jobs/` and run via `node-cron`. Each job must:
+- Acquire a distributed lock (Redis) before executing.
+- Be idempotent — safe to re-run on failure.
+- Log start/end/errors via the logger.
+
+Current jobs: `auto-dispatch`, `cart-cleanup`, `location-flush`, `sla-check`, `scheduled-orders`.
+
+## WebSocket Broadcasting
+
+Use the WS server helpers from controllers:
+- `broadcast(projectRef, payload)` — all connections in a workspace.
+- `sendToUser(projectRef, userId, payload)` — targeted delivery.
+- Always broadcast after order/delivery status changes and chat messages.
+
+## Rate Limits
+
+| Scope | Limit |
+|---|---|
+| Global `/api` | 100 req/min per IP |
+| Auth routes | 20 req/min per IP |
+| Payment routes | 30 req/min per IP |
+| OTP send | 3 req/15 min per phone |
+| Location updates | Throttled per delivery |

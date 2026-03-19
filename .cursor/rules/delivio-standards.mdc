@@ -1,27 +1,111 @@
 ---
-description: Delivio project standards (UI, DB schema, deployment, UI libs)
+description: Core project overview, conventions, and standards for the Delivio delivery platform
 alwaysApply: true
 ---
 
-# Delivio Standards
+# Delivio Project Standards
 
-## Rule 1 — UI components quality bar
+## Project Overview
 
-- **Use best-possible UI components**: prioritize clean aesthetics, strong UX, accessibility, and reliability over quick hacks.
-- **Consistency first**: keep spacing/typography/colors consistent; reuse existing patterns/components before introducing new ones.
-- **Accessibility is required**: keyboard navigation, focus states, labels/aria where needed, and sensible empty/loading/error states.
-- **Production-ready behavior**: responsive layouts, stable state management, and no janky layout shifts.
+Delivio is a **multi-tenant delivery platform** monorepo (Turborepo) with:
 
-## Rule 2 — Database schema + migrations discipline
+| App / Package | Tech | Path |
+|---|---|---|
+| Backend API | Express + WebSocket (Node.js) | `apps/server/` |
+| Customer Web | Next.js | `apps/customer/` |
+| Rider Web | Next.js | `apps/rider/` |
+| Customer Mobile | Expo / React Native | `apps/customer-mobile/` |
+| Rider Mobile | Expo / React Native | `apps/rider-mobile/` |
+| Vendor Mobile | Expo / React Native | `apps/vendor-mobile/` |
+| API Client | TypeScript | `packages/api/` |
+| Shared Types | TypeScript | `packages/types/` |
+| Shared UI | React | `packages/ui/` |
 
-- **Document every schema change**: whenever the DB schema changes, update the canonical schema file used by this repo.
-- **Always add migrations**: every schema change must ship with proper migrations (no “manual edits only”).
-- **Keep schema and migrations in sync**: ensure local/dev/prod can reach the same schema via migrations; don’t leave drift.
-- **Migration safety**: prefer additive, backward-compatible migrations; include data backfills when needed.
+**External services:** Supabase (PostgreSQL), Redis, Stripe, Twilio, Firebase Cloud Messaging, Resend/SendGrid.
 
-## Rule 3 — Deployment + UI library constraints
+## Multi-Tenancy — `project_ref`
 
-- **Backend deploy target**: we deploy the backend on Railway—avoid introducing infra assumptions that conflict with Railway.
-- **Frontend components**: use shadcn/ui components by default; only introduce another component library when strictly necessary.
-- **Icons**: use Lucide icons only (no additional icon packs unless explicitly requested).
+Every tenant-scoped table includes a `project_ref` column. **Always:**
+- Use `attachProjectRef` + `requireProjectRef` middleware on protected routes.
+- Scope every query by `project_ref` unless the table is truly global (e.g. `stripe_events`).
+- Never leak data across workspaces.
 
+## Multi-Shop Architecture
+
+Vendors can own **multiple shops** (branches/locations) within a single workspace (`project_ref`).
+
+| Concept | Table | Scope |
+|---|---|---|
+| Brand/Vendor | `workspaces` | 1:1 with `project_ref` |
+| Shop/Branch | `shops` | N:1 per `project_ref` |
+| Catalog | `products`, `categories` | Per-shop (independent catalogs) |
+| Orders | `orders` | Per-shop (`shop_id` FK) |
+| Settings | `vendor_settings` | Per-shop (`shop_id` FK) |
+| Staff access | `user_shops` | Junction table — vendor users assigned to specific shops |
+
+**Key rules:**
+- `admin` role users have access to **all shops** in their `project_ref`.
+- `vendor` role users are scoped to shops via `user_shops` — check with `requireShopAccess` middleware.
+- Use `attachShopId` + `requireShopId` + `requireShopAccess` middleware on shop-scoped routes (catalog, vendor-settings).
+- Shop ID is passed via `x-shop-id` header, `shopId` query param, or request body.
+- Products, categories, orders, and vendor_settings retain `project_ref` for tenant isolation but are primarily scoped by `shop_id`.
+- Public API routes: `GET /api/public/:ref/shops` lists shops, `GET /api/public/:ref/shops/:shopId/products` for shop menus.
+- Frontend apps use a Zustand `useShopStore` for active shop context.
+
+## UI Standards
+
+- **Component library:** shadcn/ui — only add another library when strictly necessary.
+- **Icons:** Lucide icons only.
+- **Styling:** Tailwind CSS. Keep spacing, typography, and colors consistent.
+- **Accessibility:** keyboard navigation, focus states, ARIA labels, loading/empty/error states.
+- **No layout jank:** responsive layouts, stable state management, no CLS.
+
+## Database & Migrations
+
+- Every schema change **must** ship with a numbered SQL migration in `apps/server/migrations/`.
+- Prefer additive, backward-compatible migrations; include data backfills when needed.
+- Keep the migration files and the canonical schema documentation in sync.
+- All monetary values are stored in **cents** (integer).
+
+## Deployment
+
+- **Backend:** deployed on **Railway** via Docker — avoid infra assumptions that conflict.
+- **Frontend web:** deployed on **Vercel**.
+- **CI:** GitHub Actions for lint, test, build.
+
+## Auth Model
+
+- **Admins/vendors/riders:** email + password login, session cookies (`admin_session`), optional 2FA (TOTP).
+- **Customers:** phone OTP login, session cookies (`customer_session`).
+- **API/mobile clients:** JWT bearer tokens.
+- Role-based access: `requireAdmin`, `requireRole(...)`, `requireCustomer`, `requireAnyAuth`.
+
+## Validation
+
+- All request bodies validated with **Zod** schemas in `apps/server/validators/`.
+- Use the `validate(schema)` middleware — never trust raw input.
+
+## Real-Time
+
+- Single WebSocket endpoint at `/ws`, project-scoped broadcasts.
+- Canonical event types: `order:status_changed`, `order:rejected`, `order:delayed`, `delivery:location_update`, `delivery:rider_arrived`, `delivery:request`, `chat:message`, `chat:read`, `chat:typing`.
+- Frontend providers invalidate TanStack Query caches on WS events.
+
+## Code Organization Patterns
+
+- **Backend:** routes → middleware → controllers → models/services.
+- **Models:** extend `BaseModel` (thin Supabase repository pattern).
+- **Frontend state:** Zustand for auth + cart; TanStack Query for server data.
+- **Shared code** lives in `packages/*`; import via `@delivio/api`, `@delivio/types`, `@delivio/ui`.
+
+## Post-Implementation Maintenance
+
+After every major implementation (new feature, significant refactor, schema change, new endpoint, new app, or architectural change):
+
+1. **Update Cursor rules** — if the change introduces new patterns, conventions, endpoints, event types, or architectural decisions, update the relevant `.cursor/rules/*.mdc` file so future AI sessions stay accurate.
+2. **Update shared types** — if new API contracts, WS events, or data shapes were added, ensure `packages/types/` reflects them.
+3. **Update migrations docs** — if the DB schema changed, verify the migration file is numbered correctly and the schema documentation stays in sync.
+4. **Update the project wiki** — reflect significant changes in `.qoder/repowiki/` so the knowledge base remains the source of truth.
+5. **Update `todo.md`** — mark completed items and add any follow-up tasks discovered during implementation.
+
+This is **not optional** — stale rules and docs cause compounding errors in AI-assisted development.

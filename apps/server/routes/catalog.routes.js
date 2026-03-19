@@ -5,11 +5,12 @@ const controller = require('../controllers/catalog.controller');
 const { validate } = require('../middleware/validate.middleware');
 const { requireRole } = require('../middleware/auth.middleware');
 const { attachProjectRef, requireProjectRef } = require('../middleware/project-ref.middleware');
+const { attachShopId, requireShopId, requireShopAccess } = require('../middleware/shop.middleware');
 const v = require('../validators/catalog.validator');
 
 const router = Router();
 
-router.use(attachProjectRef, requireProjectRef, requireRole('vendor', 'admin'));
+router.use(attachProjectRef, requireProjectRef, requireRole('vendor', 'admin'), attachShopId, requireShopId, requireShopAccess);
 
 // Categories
 router.get('/categories', controller.listCategories);
@@ -24,4 +25,3 @@ router.patch('/products/:id', validate(v.updateProductSchema), controller.update
 router.delete('/products/:id', controller.deleteProduct);
 
 module.exports = router;
-

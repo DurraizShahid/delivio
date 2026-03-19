@@ -14,10 +14,10 @@ export default function ChatListPage() {
   const { data: conversations, isLoading } = useConversations();
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Chat with customers and riders
         </p>
       </div>
@@ -25,7 +25,7 @@ export default function ChatListPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            <Skeleton key={i} className="h-[72px] w-full rounded-xl" />
           ))}
         </div>
       ) : !conversations || conversations.length === 0 ? (
@@ -38,19 +38,24 @@ export default function ChatListPage() {
         <div className="space-y-3">
           {conversations.map((conv) => (
             <Link key={conv.id} href={`/chat/${conv.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
+              <Card className="shadow-sm border-border/60 transition-all hover:shadow-md hover:border-border">
                 <CardContent className="flex items-center justify-between p-4">
-                  <div className="space-y-0.5">
-                    <span className="text-sm font-medium">
-                      {conv.type === "customer_vendor"
-                        ? "Customer"
-                        : "Rider"}
-                    </span>
-                    <p className="text-xs text-muted-foreground">
-                      Order #{conv.orderId.slice(0, 8)}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <MessageCircle className="size-4" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-medium">
+                        {conv.type === "customer_vendor"
+                          ? "Customer"
+                          : "Rider"}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        Order #{conv.orderId.slice(0, 8)}
+                      </p>
+                    </div>
                   </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
+                  <ChevronRight className="size-4 text-muted-foreground/50" />
                 </CardContent>
               </Card>
             </Link>

@@ -12,6 +12,10 @@ import type {
   Product,
   Category,
   Workspace,
+  Shop,
+  UserShop,
+  GeoPolygon,
+  RiderGeofence,
   PaymentIntentResponse,
   PushPlatform,
   Rating,
@@ -61,6 +65,7 @@ export interface ApiClient {
       status?: string;
       limit?: number;
       offset?: number;
+      shopId?: string;
     }): Promise<Order[]>;
     get(id: string): Promise<Order & { items: OrderItem[] }>;
     updateStatus(id: string, status: string): Promise<Order>;
@@ -158,22 +163,60 @@ export interface ApiClient {
     }): Promise<Tip>;
     getByRider(riderId: string): Promise<{ total: number }>;
   };
+  shops: {
+    list(params?: { includeInactive?: boolean }): Promise<{ shops: Shop[] }>;
+    get(shopId: string): Promise<{ shop: Shop }>;
+    create(params: {
+      name: string;
+      slug: string;
+      description?: string | null;
+      logoUrl?: string | null;
+      bannerUrl?: string | null;
+      address?: string | null;
+      phone?: string | null;
+      lat?: number | null;
+      lon?: number | null;
+      deliveryGeofence?: GeoPolygon | null;
+      isActive?: boolean;
+    }): Promise<{ shop: Shop }>;
+    update(shopId: string, params: Partial<{
+      name: string;
+      slug: string;
+      description: string | null;
+      logoUrl: string | null;
+      bannerUrl: string | null;
+      address: string | null;
+      phone: string | null;
+      lat: number | null;
+      lon: number | null;
+      deliveryGeofence: GeoPolygon | null;
+      isActive: boolean;
+    }>): Promise<{ shop: Shop }>;
+    delete(shopId: string): Promise<{ ok: boolean }>;
+    listUsers(shopId: string): Promise<{ users: Array<{ id: string; email: string; role: string }> }>;
+    assignUser(shopId: string, userId: string): Promise<{ ok: boolean }>;
+    removeUser(shopId: string, userId: string): Promise<{ ok: boolean }>;
+  };
   vendorSettings: {
-    get(): Promise<VendorSettings>;
+    get(shopId?: string): Promise<VendorSettings>;
     update(settings: Partial<{
       autoAccept: boolean;
       defaultPrepTimeMinutes: number;
       deliveryMode: string;
-      deliveryRadiusKm: number;
-    }>): Promise<VendorSettings>;
+      autoDispatchDelayMinutes: number;
+    }>, shopId?: string): Promise<VendorSettings>;
+  };
+  riderGeofence: {
+    get(): Promise<{ geofence: RiderGeofence | null }>;
+    save(geofence: GeoPolygon): Promise<{ geofence: RiderGeofence }>;
   };
   catalog: {
-    listCategories(): Promise<{ categories: Category[] }>;
-    createCategory(params: { name: string; sortOrder?: number }): Promise<{ category: Category }>;
-    updateCategory(id: string, params: Partial<{ name: string; sortOrder: number }>): Promise<{ category: Category }>;
-    deleteCategory(id: string): Promise<{ ok: boolean }>;
+    listCategories(shopId?: string): Promise<{ categories: Category[] }>;
+    createCategory(params: { name: string; sortOrder?: number }, shopId?: string): Promise<{ category: Category }>;
+    updateCategory(id: string, params: Partial<{ name: string; sortOrder: number }>, shopId?: string): Promise<{ category: Category }>;
+    deleteCategory(id: string, shopId?: string): Promise<{ ok: boolean }>;
 
-    listProducts(params?: { includeUnavailable?: boolean }): Promise<{ products: Product[] }>;
+    listProducts(params?: { includeUnavailable?: boolean }, shopId?: string): Promise<{ products: Product[] }>;
     createProduct(params: {
       name: string;
       description?: string | null;
@@ -182,7 +225,7 @@ export interface ApiClient {
       imageUrl?: string | null;
       available?: boolean;
       sortOrder?: number;
-    }): Promise<{ product: Product }>;
+    }, shopId?: string): Promise<{ product: Product }>;
     updateProduct(id: string, params: Partial<{
       name: string;
       description: string | null;
@@ -191,8 +234,8 @@ export interface ApiClient {
       imageUrl: string | null;
       available: boolean;
       sortOrder: number;
-    }>): Promise<{ product: Product }>;
-    deleteProduct(id: string): Promise<{ ok: boolean }>;
+    }>, shopId?: string): Promise<{ product: Product }>;
+    deleteProduct(id: string, shopId?: string): Promise<{ ok: boolean }>;
   };
   public: {
     products(
@@ -200,27 +243,40 @@ export interface ApiClient {
       table?: string
     ): Promise<Product[]>;
     workspace(ref: string): Promise<Workspace>;
+    shops(ref: string, lat?: number, lon?: number): Promise<Shop[]>;
+    shopDetail(ref: string, shopId: string): Promise<Shop>;
+    shopProducts(ref: string, shopId: string): Promise<Product[]>;
+    shopCategories(ref: string, shopId: string): Promise<Category[]>;
     geocode(address: string): Promise<{ lat: number; lon: number }>;
     deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
+    shopDeliveryCheck(ref: string, shopId: string, lat: number, lon: number): Promise<DeliveryCheck>;
   };
 }
 
+function shopHeader(shopId?: string): Record<string, string> {
+  return shopId ? { "x-shop-id": shopId } : {};
+}
+
 export function createApiClient(baseUrl: string): ApiClient {
-  const get = <T>(path: string) => request<T>(baseUrl, path);
-  const post = <T>(path: string, body?: unknown) =>
+  const get = <T>(path: string, headers?: Record<string, string>) =>
+    request<T>(baseUrl, path, headers ? { headers } : {});
+  const post = <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
     request<T>(baseUrl, path, {
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
+      ...(headers ? { headers } : {}),
     });
-  const patch = <T>(path: string, body?: unknown) =>
+  const patch = <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
     request<T>(baseUrl, path, {
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
+      ...(headers ? { headers } : {}),
     });
-  const del = <T>(path: string, body?: unknown) =>
+  const del = <T>(path: string, body?: unknown, headers?: Record<string, string>) =>
     request<T>(baseUrl, path, {
       method: "DELETE",
       body: body ? JSON.stringify(body) : undefined,
+      ...(headers ? { headers } : {}),
     });
 
   return {
@@ -244,6 +300,7 @@ export function createApiClient(baseUrl: string): ApiClient {
         if (params?.status) qs.set("status", params.status);
         if (params?.limit) qs.set("limit", String(params.limit));
         if (params?.offset) qs.set("offset", String(params.offset));
+        if (params?.shopId) qs.set("shopId", params.shopId);
         const q = qs.toString();
         return get<{ orders: Order[] }>(`/api/orders${q ? `?${q}` : ""}`).then(
           (r) => r.orders
@@ -328,25 +385,61 @@ export function createApiClient(baseUrl: string): ApiClient {
       create: (params) => post("/api/tips", params),
       getByRider: (riderId) => get(`/api/tips/rider/${riderId}`),
     },
+    shops: {
+      list: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.includeInactive) qs.set("includeInactive", "true");
+        const q = qs.toString();
+        return get(`/api/shops${q ? `?${q}` : ""}`);
+      },
+      get: (shopId) => get(`/api/shops/${shopId}`),
+      create: (params) => post("/api/shops", params),
+      update: (shopId, params) => patch(`/api/shops/${shopId}`, params),
+      delete: (shopId) => del(`/api/shops/${shopId}`),
+      listUsers: (shopId) => get(`/api/shops/${shopId}/users`),
+      assignUser: (shopId, userId) => post(`/api/shops/${shopId}/users`, { userId }),
+      removeUser: (shopId, userId) => del(`/api/shops/${shopId}/users/${userId}`),
+    },
     vendorSettings: {
-      get: () => get("/api/vendor-settings"),
-      update: (settings) => patch("/api/vendor-settings", settings),
+      get: (shopId) => {
+        const qs = shopId ? `?shopId=${shopId}` : "";
+        return get(`/api/vendor-settings${qs}`);
+      },
+      update: (settings, shopId) => {
+        const body = shopId ? { ...settings, shopId } : settings;
+        return patch("/api/vendor-settings", body);
+      },
+    },
+    riderGeofence: {
+      get: () => get("/api/rider/geofence"),
+      save: (geofence) => request(baseUrl, "/api/rider/geofence", {
+        method: "PUT",
+        body: JSON.stringify({ geofence }),
+        headers: { "Content-Type": "application/json" },
+      }),
     },
     catalog: {
-      listCategories: () => get("/api/catalog/categories"),
-      createCategory: (params) => post("/api/catalog/categories", params),
-      updateCategory: (id, params) => patch(`/api/catalog/categories/${id}`, params),
-      deleteCategory: (id) => del(`/api/catalog/categories/${id}`),
+      listCategories: (shopId) =>
+        get("/api/catalog/categories", shopHeader(shopId)),
+      createCategory: (params, shopId) =>
+        post("/api/catalog/categories", params, shopHeader(shopId)),
+      updateCategory: (id, params, shopId) =>
+        patch(`/api/catalog/categories/${id}`, params, shopHeader(shopId)),
+      deleteCategory: (id, shopId) =>
+        del(`/api/catalog/categories/${id}`, undefined, shopHeader(shopId)),
 
-      listProducts: (params) => {
+      listProducts: (params, shopId) => {
         const qs = new URLSearchParams();
         if (params?.includeUnavailable === false) qs.set("includeUnavailable", "false");
         const q = qs.toString();
-        return get(`/api/catalog/products${q ? `?${q}` : ""}`);
+        return get(`/api/catalog/products${q ? `?${q}` : ""}`, shopHeader(shopId));
       },
-      createProduct: (params) => post("/api/catalog/products", params),
-      updateProduct: (id, params) => patch(`/api/catalog/products/${id}`, params),
-      deleteProduct: (id) => del(`/api/catalog/products/${id}`),
+      createProduct: (params, shopId) =>
+        post("/api/catalog/products", params, shopHeader(shopId)),
+      updateProduct: (id, params, shopId) =>
+        patch(`/api/catalog/products/${id}`, params, shopHeader(shopId)),
+      deleteProduct: (id, shopId) =>
+        del(`/api/catalog/products/${id}`, undefined, shopHeader(shopId)),
     },
     public: {
       products: (ref, table = "products") =>
@@ -369,10 +462,25 @@ export function createApiClient(baseUrl: string): ApiClient {
           return [];
         }),
       workspace: (ref) => get(`/api/workspace/${ref}`),
+      shops: (ref, lat?, lon?) => {
+        const qs = new URLSearchParams();
+        if (lat != null) qs.set("lat", String(lat));
+        if (lon != null) qs.set("lon", String(lon));
+        const q = qs.toString();
+        return get<{ shops: Shop[] }>(`/api/public/${ref}/shops${q ? `?${q}` : ""}`).then((r) => r.shops);
+      },
+      shopDetail: (ref, shopId) =>
+        get<{ shop: Shop }>(`/api/public/${ref}/shops/${shopId}`).then((r) => r.shop),
+      shopProducts: (ref, shopId) =>
+        get<{ products: Product[] }>(`/api/public/${ref}/shops/${shopId}/products`).then((r) => r.products),
+      shopCategories: (ref, shopId) =>
+        get<{ categories: Category[] }>(`/api/public/${ref}/shops/${shopId}/categories`).then((r) => r.categories),
       geocode: (address) =>
         get(`/api/geocode?address=${encodeURIComponent(address)}`),
       deliveryCheck: (ref, lat, lon) =>
         get(`/api/public/${ref}/delivery-check?lat=${lat}&lon=${lon}`),
+      shopDeliveryCheck: (ref, shopId, lat, lon) =>
+        get(`/api/public/${ref}/shops/${shopId}/delivery-check?lat=${lat}&lon=${lon}`),
     },
   };
 }

@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { Order, OrderStatus } from "@delivio/types";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 import { api, wsClient } from "@/lib/api";
+import { useShopStore } from "@/stores/shop-store";
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
   placed: colors.warning,
@@ -73,14 +74,15 @@ function formatSlaCountdown(slaDeadline: string): string {
 export default function OrdersDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const activeShop = useShopStore((s) => s.activeShop);
   const [rejectOrderId, setRejectOrderId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [acceptOrderId, setAcceptOrderId] = useState<string | null>(null);
   const [prepTimeMinutes, setPrepTimeMinutes] = useState("15");
 
   const { data: orders, isLoading } = useQuery<Order[]>({
-    queryKey: ["vendor-orders"],
-    queryFn: () => api.orders.list({ limit: 50 }) as Promise<Order[]>,
+    queryKey: ["vendor-orders", activeShop?.id],
+    queryFn: () => api.orders.list({ limit: 50, shopId: activeShop?.id }) as Promise<Order[]>,
     refetchInterval: 15_000,
   });
 

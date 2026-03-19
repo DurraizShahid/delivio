@@ -17,6 +17,7 @@ import type { DeliveryMode, VendorSettings } from "@delivio/types";
 import { colors, spacing, fontSize, borderRadius } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
+import { useShopStore } from "@/stores/shop-store";
 
 const DELIVERY_MODES: { value: DeliveryMode; label: string }[] = [
   { value: "third_party", label: "Third Party" },
@@ -28,6 +29,7 @@ export default function SettingsScreen() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const activeShop = useShopStore((s) => s.activeShop);
 
   const [autoAccept, setAutoAccept] = useState(false);
   const [defaultPrepTime, setDefaultPrepTime] = useState("15");
@@ -36,8 +38,8 @@ export default function SettingsScreen() {
   const [autoDispatchDelay, setAutoDispatchDelay] = useState("0");
 
   const { data: settings, isLoading } = useQuery<VendorSettings>({
-    queryKey: ["vendor-settings"],
-    queryFn: () => api.vendorSettings.get(),
+    queryKey: ["vendor-settings", activeShop?.id],
+    queryFn: () => api.vendorSettings.get(activeShop?.id),
   });
 
   const updateMutation = useMutation({
@@ -48,9 +50,9 @@ export default function SettingsScreen() {
         deliveryMode,
         deliveryRadiusKm: parseFloat(deliveryRadius) || 5,
         autoDispatchDelayMinutes: parseInt(autoDispatchDelay, 10) || 0,
-      }),
+      }, activeShop?.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendor-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-settings", activeShop?.id] });
       Alert.alert("Saved", "Settings updated successfully.");
     },
     onError: () => Alert.alert("Error", "Failed to save settings."),

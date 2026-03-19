@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight, Store } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -56,35 +56,31 @@ export default function VendorLoginPage() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.08] via-background to-background" />
-        <div className="absolute left-1/2 top-0 h-64 w-[640px] -translate-x-1/2 rounded-full bg-primary/[0.08] blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.06] via-background to-background" />
+        <div className="absolute left-1/2 top-0 h-80 w-[800px] -translate-x-1/2 rounded-full bg-primary/[0.07] blur-3xl" />
       </div>
 
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
-        <div className="mb-6 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <span className="text-base font-bold">D</span>
-            </div>
-            <div className="leading-tight">
-              <div className="text-lg font-semibold tracking-tight">
-                Delivio Vendor
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Restaurant dashboard
-              </div>
-            </div>
+      <div className="mx-auto flex min-h-screen w-full max-w-[420px] flex-col justify-center px-4 py-10">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20">
+            <Store className="size-6" />
           </div>
+          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+            Delivio Vendor
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sign in to manage your restaurant
+          </p>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl tracking-tight">Sign in</CardTitle>
+        <Card className="shadow-lg shadow-black/[0.04] border-border/60">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-lg font-semibold">Welcome back</CardTitle>
             <CardDescription>
-              Use your vendor email and password.
+              Enter your credentials to continue
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label
@@ -139,7 +135,7 @@ export default function VendorLoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    Signing in…
+                    Signing in...
                   </>
                 ) : (
                   <>
@@ -151,8 +147,8 @@ export default function VendorLoginPage() {
           </CardContent>
         </Card>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Having trouble? Contact support from the Settings page once signed in.
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          Need help? Contact support from the Settings page once signed in.
         </p>
       </div>
     </div>

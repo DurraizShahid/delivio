@@ -4,24 +4,21 @@ const cron = require('node-cron');
 const { supabaseFetch } = require('../lib/supabase');
 const deliveryModel = require('../models/delivery.model');
 const vendorSettingsModel = require('../models/vendor-settings.model');
+const riderGeofenceModel = require('../models/rider-geofence.model');
 const wsServer = require('../websocket/ws-server');
 const sessionService = require('../services/session.service');
 const { select } = require('../lib/supabase');
-const { haversineKm } = require('../lib/geo');
+const { haversineKm, getEffectiveGeofence, polygonsIntersect } = require('../lib/geo');
 const logger = require('../lib/logger');
 const { acquireLock, releaseLock } = require('../lib/lock');
 
-/**
- * Every 30 seconds: find orders with status 'ready' that have no
- * delivery record yet — create one and broadcast to available riders.
- */
 function start() {
   const task = cron.schedule('*/30 * * * * *', async () => {
     const lock = await acquireLock('lock:job:auto-dispatch', 25_000);
     if (!lock) return;
     try {
       const readyOrders = await supabaseFetch(
-        '/rest/v1/orders?status=eq.ready&select=id,project_ref,updated_at'
+        '/rest/v1/orders?status=eq.ready&select=id,project_ref,shop_id,updated_at'
       );
 
       if (!readyOrders || readyOrders.length === 0) return;
@@ -30,7 +27,9 @@ function start() {
         const existing = await deliveryModel.findByOrderId(order.id);
         if (existing) continue;
 
-        const vendorSettings = await vendorSettingsModel.findByProjectRef(order.project_ref);
+        const vendorSettings = order.shop_id
+          ? await vendorSettingsModel.findByShopId(order.shop_id)
+          : await vendorSettingsModel.findByProjectRef(order.project_ref);
         const delayMinutes = vendorSettings?.auto_dispatch_delay_minutes || 0;
 
         if (delayMinutes > 0) {
@@ -41,38 +40,68 @@ function start() {
 
         const delivery = await deliveryModel.create({ orderId: order.id });
 
-        // Spatial rider matching: prefer notifying riders within vendor radius who are online + reporting location.
-        const workspaces = await select('workspaces', { filters: { project_ref: order.project_ref } });
-        const workspace = workspaces?.[0];
+        let shop = null;
+        let shopGeofence = null;
+        let vendorLat, vendorLon;
+
+        if (order.shop_id) {
+          const shops = await select('shops', { filters: { id: order.shop_id } });
+          shop = shops?.[0];
+          vendorLat = shop?.lat;
+          vendorLon = shop?.lon;
+          shopGeofence = getEffectiveGeofence(shop, vendorSettings);
+        }
+        if (!vendorLat || !vendorLon) {
+          const workspaces = await select('workspaces', { filters: { project_ref: order.project_ref } });
+          const workspace = workspaces?.[0];
+          vendorLat = workspace?.lat;
+          vendorLon = workspace?.lon;
+        }
+
         const baseRadiusKm = vendorSettings?.delivery_radius_km || 5.0;
         await sessionService.cacheDeliverySearchRadius(delivery.id, baseRadiusKm);
 
+        const isVendorRider = vendorSettings?.delivery_mode === 'vendor_rider';
+
         let notified = 0;
-        if (workspace?.lat && workspace?.lon) {
-          const onlineRiders = wsServer.listOnlineUsersByRole(order.project_ref, 'rider');
-          for (const riderId of onlineRiders) {
-            const loc = await sessionService.getRiderAvailability(order.project_ref, riderId);
-            if (!loc?.lat || !loc?.lon) continue;
-            const d = haversineKm(loc.lat, loc.lon, workspace.lat, workspace.lon);
-            if (d <= baseRadiusKm) {
-              notified += wsServer.sendToUser(order.project_ref, riderId, {
-                type: 'delivery:request',
-                deliveryId: delivery.id,
-                orderId: order.id,
-                createdAt: new Date().toISOString(),
-                radiusKm: baseRadiusKm,
-              });
+        const onlineRiders = wsServer.listOnlineUsersByRole(order.project_ref, 'rider');
+
+        for (const riderId of onlineRiders) {
+          const loc = await sessionService.getRiderAvailability(order.project_ref, riderId);
+          if (!loc?.lat || !loc?.lon) continue;
+
+          let shouldNotify = false;
+
+          if (isVendorRider) {
+            shouldNotify = true;
+          } else if (shopGeofence) {
+            const riderGeo = await riderGeofenceModel.findByUserId(riderId);
+            if (riderGeo?.geofence) {
+              shouldNotify = polygonsIntersect(shopGeofence, riderGeo.geofence);
+            } else if (vendorLat && vendorLon) {
+              shouldNotify = haversineKm(loc.lat, loc.lon, vendorLat, vendorLon) <= baseRadiusKm;
             }
+          } else if (vendorLat && vendorLon) {
+            shouldNotify = haversineKm(loc.lat, loc.lon, vendorLat, vendorLon) <= baseRadiusKm;
+          }
+
+          if (shouldNotify) {
+            notified += wsServer.sendToUser(order.project_ref, riderId, {
+              type: 'delivery:request',
+              deliveryId: delivery.id,
+              orderId: order.id,
+              createdAt: new Date().toISOString(),
+              radiusKm: baseRadiusKm,
+            });
           }
         }
 
         if (notified === 0) {
-          // Fallback: broadcast to the whole project (legacy behavior)
           wsServer.broadcast(order.project_ref, {
-          type: 'delivery:request',
-          deliveryId: delivery.id,
-          orderId: order.id,
-          createdAt: new Date().toISOString(),
+            type: 'delivery:request',
+            deliveryId: delivery.id,
+            orderId: order.id,
+            createdAt: new Date().toISOString(),
           });
         }
 
