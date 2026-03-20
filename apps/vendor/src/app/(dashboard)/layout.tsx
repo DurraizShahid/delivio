@@ -12,7 +12,15 @@ import {
   LogOut,
   Store,
 } from "lucide-react";
-import { Button, Skeleton, cn, ThemeToggle, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
+import {
+  Button,
+  Skeleton,
+  cn,
+  ThemeToggle,
+  PlatformBrandingMark,
+  PlatformWordmark,
+  usePlatformBranding,
+} from "@delivio/ui";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { ShopSelector } from "@/components/shop-selector";
@@ -76,7 +84,9 @@ export default function DashboardLayout({
                 <PlatformBrandingMark className="size-9 text-sm" imgClassName="p-1.5" />
               </div>
               <div className="leading-tight">
-                <div className="text-[15px] font-semibold tracking-tight">{appName}</div>
+                <PlatformWordmark className="text-[15px] font-semibold tracking-tight">
+                  {appName}
+                </PlatformWordmark>
                 <div className="text-xs text-muted-foreground">Vendor Portal</div>
               </div>
             </div>

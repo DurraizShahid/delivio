@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/providers/toaster";
 import { QueryProvider } from "@/providers/query-provider";
 import { DynamicThemeProvider } from "@delivio/ui";
+import { buildVendorMetadata } from "@/lib/platform-theme-metadata";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
@@ -16,10 +17,9 @@ const API_URL =
 
 const PROJECT_REF = process.env.NEXT_PUBLIC_PROJECT_REF || "demo";
 
-export const metadata: Metadata = {
-  title: "Delivio Vendor Dashboard",
-  description: "Manage your restaurant orders and settings",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildVendorMetadata();
+}
 
 export default function RootLayout({
   children,

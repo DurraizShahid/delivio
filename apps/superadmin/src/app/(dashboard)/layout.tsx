@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -64,6 +64,14 @@ export default function DashboardLayout({
     );
   }
   if (!isAuthenticated) return null;
+
+  const mobileNavItems = useMemo(
+    () =>
+      ["/", "/workspaces", "/orders", "/settings", "/themes"]
+        .map((href) => navItems.find((i) => i.href === href))
+        .filter(Boolean) as typeof navItems,
+    [],
+  );
 
   const currentNav = navItems.find((i) =>
     i.href === "/" ? pathname === "/" : pathname.startsWith(i.href)
@@ -150,7 +158,7 @@ export default function DashboardLayout({
 
           <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-card/95 backdrop-blur-sm md:hidden">
             <div className="mx-auto flex max-w-lg items-center justify-around py-1">
-              {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
+              {mobileNavItems.map(({ href, label, icon: Icon }) => {
                 const isActive =
                   href === "/" ? pathname === "/" : pathname.startsWith(href);
                 return (

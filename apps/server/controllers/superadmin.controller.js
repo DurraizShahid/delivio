@@ -331,11 +331,22 @@ async function getStats(req, res, next) {
 
 // ─── Themes ──────────────────────────────────────────────────────────────────
 
+const BRANDING_PRUNE_KEYS = [
+  'appName',
+  'logoUrl',
+  'faviconUrl',
+  'wordmarkUrl',
+  'ogImageUrl',
+  'supportEmail',
+  'helpUrl',
+];
+
 function pruneThemePayload(theme) {
   if (!theme || typeof theme !== 'object') return {};
   const t = { ...theme };
-  if (t.appName === null || t.appName === '') delete t.appName;
-  if (t.logoUrl === null || t.logoUrl === '') delete t.logoUrl;
+  for (const k of BRANDING_PRUNE_KEYS) {
+    if (t[k] === null || t[k] === '') delete t[k];
+  }
   return t;
 }
 

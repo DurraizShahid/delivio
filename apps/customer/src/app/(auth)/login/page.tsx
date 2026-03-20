@@ -4,7 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Input, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
+import {
+  Button,
+  Input,
+  PlatformBrandingMark,
+  PlatformWordmark,
+  usePlatformBranding,
+} from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
@@ -34,7 +40,7 @@ function isE164(phone: string) {
 }
 
 export default function LoginPage() {
-  const { appName } = usePlatformBranding();
+  const { appName, helpUrl, supportEmail } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setCustomer = useAuthStore((s) => s.setCustomer);
@@ -113,7 +119,9 @@ export default function LoginPage() {
             <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-primary shadow-lg shadow-primary/25">
               <PlatformBrandingMark className="size-12 text-xl" imgClassName="p-2" />
             </div>
-            <span className="text-3xl font-bold tracking-tight">{appName}</span>
+            <PlatformWordmark>
+              <span className="text-3xl font-bold tracking-tight">{appName}</span>
+            </PlatformWordmark>
           </div>
           <h2 className="mt-8 text-3xl font-bold leading-tight">
             Delicious food,
@@ -141,7 +149,9 @@ export default function LoginPage() {
             <div className="flex size-8 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
               <PlatformBrandingMark className="size-8 text-sm" imgClassName="p-1" />
             </div>
-            <span className="font-bold">{appName}</span>
+            <PlatformWordmark>
+              <span className="font-bold">{appName}</span>
+            </PlatformWordmark>
           </div>
         </div>
 
@@ -264,7 +274,34 @@ export default function LoginPage() {
               </form>
             )}
 
-            <p className="mt-8 text-center text-xs text-muted-foreground">
+            {(helpUrl || supportEmail) && (
+              <p className="mt-8 text-center text-sm text-muted-foreground">
+                Need help?{" "}
+                {helpUrl ? (
+                  <a
+                    href={helpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    Help center
+                  </a>
+                ) : null}
+                {helpUrl && supportEmail ? (
+                  <span className="text-muted-foreground/80"> · </span>
+                ) : null}
+                {supportEmail ? (
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    {supportEmail}
+                  </a>
+                ) : null}
+              </p>
+            )}
+
+            <p className="mt-6 text-center text-xs text-muted-foreground">
               By continuing, you agree to our Terms of Service and Privacy
               Policy.
             </p>

@@ -12,7 +12,14 @@ import {
   X,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { Button, cn, ThemeToggle, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
+import {
+  Button,
+  cn,
+  ThemeToggle,
+  PlatformBrandingMark,
+  PlatformWordmark,
+  usePlatformBranding,
+} from "@delivio/ui";
 import { useCartStore } from "@/stores/cart-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLocationStore } from "@/stores/location-store";
@@ -46,9 +53,9 @@ export function SiteHeader() {
           <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
             <PlatformBrandingMark className="size-9 text-base" imgClassName="p-1.5" />
           </div>
-          <span className="hidden text-xl font-bold tracking-tight sm:block">
-            {appName}
-          </span>
+          <PlatformWordmark className="hidden sm:inline-flex">
+            <span className="text-xl font-bold tracking-tight">{appName}</span>
+          </PlatformWordmark>
         </Link>
 
         {/* Location selector */}

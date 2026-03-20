@@ -20,7 +20,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const session = await api.auth.getAdminSession();
       if (session?.user) {
-        set({ user: session.user as User, isAuthenticated: true, isLoading: false });
+        set({ user: session.user as unknown as User, isAuthenticated: true, isLoading: false });
       } else {
         // Avoid immediately logging the user out right after a successful login.
         // There can be a short window where the cookie isn't yet visible to the

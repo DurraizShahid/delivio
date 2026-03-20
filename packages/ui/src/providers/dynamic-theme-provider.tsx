@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -31,12 +32,49 @@ interface ResolvedThemePayload {
   dark: ThemeColors;
   appName?: string;
   logoUrl?: string;
+  faviconUrl?: string;
+  wordmarkUrl?: string;
+  ogImageUrl?: string;
+  supportEmail?: string;
+  helpUrl?: string;
 }
 
 export interface PlatformBranding {
-  /** Resolved display name (API or fallback) */
   appName: string;
   logoUrl: string | null;
+  faviconUrl: string | null;
+  wordmarkUrl: string | null;
+  ogImageUrl: string | null;
+  supportEmail: string | null;
+  helpUrl: string | null;
+}
+
+function emptyBranding(fallbackAppName: string): PlatformBranding {
+  return {
+    appName: fallbackAppName,
+    logoUrl: null,
+    faviconUrl: null,
+    wordmarkUrl: null,
+    ogImageUrl: null,
+    supportEmail: null,
+    helpUrl: null,
+  };
+}
+
+function payloadToBranding(
+  t: Partial<ResolvedThemePayload>,
+  fallbackAppName: string,
+): PlatformBranding {
+  const s = (v: unknown) => (v != null && String(v).trim() !== "" ? String(v).trim() : null);
+  return {
+    appName: s(t.appName) || fallbackAppName,
+    logoUrl: s(t.logoUrl),
+    faviconUrl: s(t.faviconUrl),
+    wordmarkUrl: s(t.wordmarkUrl),
+    ogImageUrl: s(t.ogImageUrl),
+    supportEmail: s(t.supportEmail),
+    helpUrl: s(t.helpUrl),
+  };
 }
 
 const BrandingContext = createContext<PlatformBranding | null>(null);
@@ -133,18 +171,50 @@ function injectTheme(theme: Pick<ResolvedThemePayload, "light" | "dark">) {
 
 function readCachedBranding(fallbackAppName: string): PlatformBranding {
   if (typeof window === "undefined") {
-    return { appName: fallbackAppName, logoUrl: null };
+    return emptyBranding(fallbackAppName);
   }
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return { appName: fallbackAppName, logoUrl: null };
+    if (!raw) return emptyBranding(fallbackAppName);
     const t = JSON.parse(raw) as Partial<ResolvedThemePayload>;
-    return {
-      appName: (t.appName && String(t.appName).trim()) || fallbackAppName,
-      logoUrl: (t.logoUrl && String(t.logoUrl).trim()) || null,
-    };
+    return payloadToBranding(t, fallbackAppName);
   } catch {
-    return { appName: fallbackAppName, logoUrl: null };
+    return emptyBranding(fallbackAppName);
+  }
+}
+
+function setMetaProperty(property: string, content: string) {
+  let el = document.querySelector<HTMLMetaElement>(
+    `meta[property="${property}"]`,
+  );
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute("property", property);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
+
+function setMetaName(name: string, content: string) {
+  let el = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute("name", name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
+
+function upsertOgTags(branding: PlatformBranding) {
+  if (typeof document === "undefined") return;
+  const title = branding.appName;
+  const og = branding.ogImageUrl;
+
+  setMetaProperty("og:title", title);
+  if (og) {
+    setMetaProperty("og:image", og);
+    setMetaName("twitter:image", og);
+    setMetaName("twitter:card", "summary_large_image");
   }
 }
 
@@ -164,9 +234,15 @@ export function DynamicThemeProvider({
   children: ReactNode;
 }) {
   const fetched = useRef(false);
+  // Initial state must match SSR: never read localStorage in useState init — that
+  // runs on the client with cache but the server only had fallback → hydration mismatch.
   const [branding, setBranding] = useState<PlatformBranding>(() =>
-    readCachedBranding(fallbackAppName),
+    emptyBranding(fallbackAppName),
   );
+
+  useLayoutEffect(() => {
+    setBranding(readCachedBranding(fallbackAppName));
+  }, [fallbackAppName]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -174,15 +250,21 @@ export function DynamicThemeProvider({
   }, [branding.appName]);
 
   useEffect(() => {
-    if (typeof document === "undefined" || !branding.logoUrl) return;
+    if (typeof document === "undefined") return;
+    const href = branding.faviconUrl || branding.logoUrl;
+    if (!href) return;
     let link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
     if (!link) {
       link = document.createElement("link");
       link.rel = "icon";
       document.head.appendChild(link);
     }
-    link.href = branding.logoUrl;
-  }, [branding.logoUrl]);
+    link.href = href;
+  }, [branding.faviconUrl, branding.logoUrl]);
+
+  useEffect(() => {
+    upsertOgTags(branding);
+  }, [branding.appName, branding.ogImageUrl]);
 
   useEffect(() => {
     if (fetched.current) return;
@@ -201,15 +283,12 @@ export function DynamicThemeProvider({
           localStorage.removeItem(CACHE_KEY);
           const el = document.getElementById("delivio-dynamic-theme");
           if (el) el.textContent = "";
-          setBranding({ appName: fallbackAppName, logoUrl: null });
+          setBranding(emptyBranding(fallbackAppName));
           return;
         }
         injectTheme(theme);
         localStorage.setItem(CACHE_KEY, JSON.stringify(theme));
-        setBranding({
-          appName: (theme.appName && String(theme.appName).trim()) || fallbackAppName,
-          logoUrl: (theme.logoUrl && String(theme.logoUrl).trim()) || null,
-        });
+        setBranding(payloadToBranding(theme, fallbackAppName));
       })
       .catch(() => {
         // network error — keep cached version if any

@@ -11,23 +11,26 @@ const VALID_TARGETS = [
 ];
 
 /** Keys merged from theme JSON but exposed as top-level in /api/public/theme (not CSS variables). */
-const BRANDING_KEYS = ['appName', 'logoUrl'];
+const BRANDING_KEYS = [
+  'appName',
+  'logoUrl',
+  'faviconUrl',
+  'wordmarkUrl',
+  'ogImageUrl',
+  'supportEmail',
+  'helpUrl',
+];
 
 function pickBranding(mergedLight, mergedDark) {
-  const fromLight = {};
-  const fromDark = {};
+  const brand = {};
   for (const k of BRANDING_KEYS) {
-    if (mergedLight && mergedLight[k] != null && mergedLight[k] !== '') {
-      fromLight[k] = mergedLight[k];
-    }
-    if (mergedDark && mergedDark[k] != null && mergedDark[k] !== '') {
-      fromDark[k] = mergedDark[k];
-    }
+    const lv = mergedLight && mergedLight[k];
+    const dv = mergedDark && mergedDark[k];
+    const v =
+      lv != null && lv !== '' ? lv : dv != null && dv !== '' ? dv : undefined;
+    if (v !== undefined) brand[k] = v;
   }
-  return {
-    appName: fromLight.appName || fromDark.appName || undefined,
-    logoUrl: fromLight.logoUrl || fromDark.logoUrl || undefined,
-  };
+  return brand;
 }
 
 function stripBrandingKeys(obj) {
@@ -129,14 +132,11 @@ class PlatformThemeModel extends BaseModel {
       Object.assign(mergedDark, dt);
     }
 
-    const { appName, logoUrl } = pickBranding(mergedLight, mergedDark);
+    const brand = pickBranding(mergedLight, mergedDark);
     const light = stripBrandingKeys(mergedLight);
     const dark = stripBrandingKeys(mergedDark);
 
-    const out = { light, dark };
-    if (appName) out.appName = appName;
-    if (logoUrl) out.logoUrl = logoUrl;
-    return out;
+    return { light, dark, ...brand };
   }
 }
 

@@ -425,6 +425,13 @@ export interface ThemeColors {
   /** Platform branding (global theme); not applied as CSS variables */
   appName?: string;
   logoUrl?: string;
+  faviconUrl?: string;
+  /** Wide / horizontal logo for headers */
+  wordmarkUrl?: string;
+  /** Default Open Graph / social share image */
+  ogImageUrl?: string;
+  supportEmail?: string;
+  helpUrl?: string;
 }
 
 export interface PlatformTheme {
@@ -442,6 +449,11 @@ export interface ResolvedTheme {
   dark: ThemeColors;
   appName?: string;
   logoUrl?: string;
+  faviconUrl?: string;
+  wordmarkUrl?: string;
+  ogImageUrl?: string;
+  supportEmail?: string;
+  helpUrl?: string;
 }
 
 // ─── Platform Banners ─────────────────────────────────────────────────────────

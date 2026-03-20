@@ -57,8 +57,9 @@ export default function GeofenceDrawerMap({
       markerRef.current = marker;
     }
 
-    if (geofence?.coordinates?.[0]?.length > 2) {
-      const latlngs = geofence.coordinates[0].map(
+    const geofenceRing = geofence?.coordinates?.[0];
+    if (geofenceRing && geofenceRing.length > 2) {
+      const latlngs = geofenceRing.map(
         (coord) => [coord[1], coord[0]] as [number, number]
       );
       const polygon = L.polygon(latlngs, {

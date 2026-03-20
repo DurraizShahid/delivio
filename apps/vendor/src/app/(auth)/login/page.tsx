@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardContent,
   PlatformBrandingMark,
+  PlatformWordmark,
   usePlatformBranding,
 } from "@delivio/ui";
 import { api } from "@/lib/api";
@@ -20,7 +21,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@delivio/types";
 
 export default function VendorLoginPage() {
-  const { appName } = usePlatformBranding();
+  const { appName, helpUrl, supportEmail } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
@@ -76,9 +77,9 @@ export default function VendorLoginPage() {
           <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20">
             <PlatformBrandingMark className="size-14 text-xl" imgClassName="p-2" />
           </div>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">
+          <PlatformWordmark className="mt-4 block text-xl font-semibold tracking-tight">
             {appName}
-          </h1>
+          </PlatformWordmark>
           <p className="mt-1 text-sm text-muted-foreground">
             Sign in to manage your restaurant
           </p>
@@ -158,8 +159,33 @@ export default function VendorLoginPage() {
           </CardContent>
         </Card>
 
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Need help? Contact support from the Settings page once signed in.
+        {(helpUrl || supportEmail) && (
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Need help?{" "}
+            {helpUrl ? (
+              <a
+                href={helpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Help center
+              </a>
+            ) : null}
+            {helpUrl && supportEmail ? <span className="text-muted-foreground/80"> · </span> : null}
+            {supportEmail ? (
+              <a
+                href={`mailto:${supportEmail}`}
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                {supportEmail}
+              </a>
+            ) : null}
+          </p>
+        )}
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Signed in? Use Settings → support options in your dashboard.
         </p>
       </div>
     </div>

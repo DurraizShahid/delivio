@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
+import {
+  PlatformBrandingMark,
+  PlatformWordmark,
+  usePlatformBranding,
+} from "@delivio/ui";
 
 export function SiteFooter() {
-  const { appName } = usePlatformBranding();
+  const { appName, helpUrl, supportEmail } = usePlatformBranding();
 
   return (
     <footer className="mt-auto border-t border-border/50 bg-muted/30">
@@ -16,7 +20,9 @@ export function SiteFooter() {
               <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
                 <PlatformBrandingMark className="size-9 text-base" imgClassName="p-1.5" />
               </div>
-              <span className="text-xl font-bold tracking-tight">{appName}</span>
+              <PlatformWordmark>
+                <span className="text-xl font-bold tracking-tight">{appName}</span>
+              </PlatformWordmark>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Order food from the best restaurants near you. Fast delivery, easy
@@ -50,15 +56,33 @@ export function SiteFooter() {
           <div>
             <h3 className="text-sm font-semibold">Support</h3>
             <ul className="mt-3 space-y-2">
-              {["Help Center", "Terms of Service", "Privacy Policy", "Contact Us"].map(
-                (label) => (
-                  <li key={label}>
-                    <span className="text-sm text-muted-foreground transition-colors hover:text-foreground cursor-pointer">
-                      {label}
-                    </span>
-                  </li>
-                )
-              )}
+              {helpUrl ? (
+                <li>
+                  <a
+                    href={helpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Help center
+                  </a>
+                </li>
+              ) : null}
+              {supportEmail ? (
+                <li>
+                  <a
+                    href={`mailto:${supportEmail}`}
+                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {supportEmail}
+                  </a>
+                </li>
+              ) : null}
+              {["Terms of Service", "Privacy Policy"].map((label) => (
+                <li key={label}>
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                </li>
+              ))}
             </ul>
           </div>
 

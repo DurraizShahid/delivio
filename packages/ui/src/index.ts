@@ -20,6 +20,7 @@ export { EmptyState } from "./components/empty-state";
 export { LoadingScreen } from "./components/loading-screen";
 export { PriceDisplay } from "./components/price-display";
 export { PlatformBrandingMark } from "./components/platform-branding-mark";
+export { PlatformWordmark } from "./components/platform-wordmark";
 
 // Providers
 export {

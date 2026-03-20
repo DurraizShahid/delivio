@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardContent,
   PlatformBrandingMark,
+  PlatformWordmark,
   usePlatformBranding,
 } from "@delivio/ui";
 import { api } from "@/lib/api";
@@ -20,7 +21,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@delivio/types";
 
 export default function LoginPage() {
-  const { appName } = usePlatformBranding();
+  const { appName, helpUrl, supportEmail } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
@@ -78,9 +79,9 @@ export default function LoginPage() {
               <PlatformBrandingMark className="size-10 text-base" imgClassName="p-1.5" />
             </div>
             <div className="leading-tight">
-              <div className="text-lg font-semibold tracking-tight">
+              <PlatformWordmark className="text-lg font-semibold tracking-tight">
                 {appName}
-              </div>
+              </PlatformWordmark>
               <div className="text-sm text-muted-foreground">
                 Deliveries & earnings
               </div>
@@ -158,6 +159,31 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        {(helpUrl || supportEmail) && (
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Need help?{" "}
+            {helpUrl ? (
+              <a
+                href={helpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Help center
+              </a>
+            ) : null}
+            {helpUrl && supportEmail ? <span className="text-muted-foreground/80"> · </span> : null}
+            {supportEmail ? (
+              <a
+                href={`mailto:${supportEmail}`}
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                {supportEmail}
+              </a>
+            ) : null}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -54,6 +54,17 @@ const updateShopSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const optionalHttpUrl = z
+  .string()
+  .trim()
+  .max(2048)
+  .optional()
+  .nullable()
+  .refine(
+    (val) => val == null || val === '' || /^https?:\/\/.+/i.test(val),
+    { message: 'Must be an absolute http(s) URL or empty' },
+  );
+
 const themeColorsSchema = z.object({
   primary: z.string().max(100).optional(),
   primaryForeground: z.string().max(100).optional(),
@@ -70,16 +81,21 @@ const themeColorsSchema = z.object({
   cardForeground: z.string().max(100).optional(),
   border: z.string().max(100).optional(),
   appName: z.string().trim().max(120).optional().nullable(),
-  logoUrl: z
+  logoUrl: optionalHttpUrl,
+  faviconUrl: optionalHttpUrl,
+  wordmarkUrl: optionalHttpUrl,
+  ogImageUrl: optionalHttpUrl,
+  supportEmail: z
     .string()
     .trim()
-    .max(2048)
+    .max(320)
     .optional()
     .nullable()
     .refine(
-      (val) => val == null || val === '' || /^https?:\/\/.+/i.test(val),
-      { message: 'logoUrl must be an absolute http(s) URL or empty' },
+      (val) => val == null || val === '' || z.string().email().safeParse(val).success,
+      { message: 'Invalid support email' },
     ),
+  helpUrl: optionalHttpUrl,
 });
 
 const upsertThemeSchema = z.object({

@@ -49,7 +49,7 @@ All `/api/superadmin/*` routes are platform-level (no project_ref scoping). Prot
 
 - Auth: `POST /api/superadmin/auth/login`, `/logout`, `GET /session`
 - Resources: workspaces, users, shops, customers, orders CRUD, themes/banners, `GET /api/superadmin/stats`
-- Platform logo upload: `POST /api/superadmin/platform-logo` (multipart field `logo`, PNG/JPEG/WebP, max 2&nbsp;MB) → `{ logoUrl }`; files under `data/uploads/platform-logos/`, served at `/uploads/platform-logos/*`. Use env **`PUBLIC_SERVER_URL`** for correct absolute URLs in production.
+- Platform logo / branding image upload: `POST /api/superadmin/platform-logo` (multipart field `logo`, PNG/JPEG/WebP, max 2&nbsp;MB) → `{ logoUrl }`; files under `data/uploads/platform-logos/`, served at `/uploads/platform-logos/*`. Global theme JSON may also store `faviconUrl`, `wordmarkUrl`, `ogImageUrl`, `supportEmail`, `helpUrl` (all returned from `GET /api/public/theme`). Use **`PUBLIC_SERVER_URL`** for correct absolute URLs in production.
 - Superadmin sessions use `superadmin_session` cookie and `session:superadmin:` key prefix.
 
 ## Error Responses
