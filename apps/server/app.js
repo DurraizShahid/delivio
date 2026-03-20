@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 
+const { PLATFORM_LOGO_UPLOAD_DIR, PLATFORM_LOGO_PUBLIC_MOUNT } = require('./middleware/platform-logo-upload.middleware');
+
 const config = require('./config');
 const corsOptions = require('./config/cors');
 const helmetOptions = require('./config/helmet');
@@ -35,6 +37,11 @@ app.use(
     skip: (req) => req.path === '/api/health', // Don't log health checks
   })
 );
+
+// ─── Static uploads (platform logos, etc.) ───────────────────────────────────
+app.use(PLATFORM_LOGO_PUBLIC_MOUNT, express.static(PLATFORM_LOGO_UPLOAD_DIR, {
+  maxAge: config.isProd ? '7d' : 0,
+}));
 
 // ─── Body Parsing ─────────────────────────────────────────────────────────────
 // NOTE: The Stripe webhook route uses express.raw() — it is mounted BEFORE these parsers

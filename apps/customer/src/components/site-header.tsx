@@ -12,12 +12,13 @@ import {
   X,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { Button, cn, ThemeToggle } from "@delivio/ui";
+import { Button, cn, ThemeToggle, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
 import { useCartStore } from "@/stores/cart-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useLocationStore } from "@/stores/location-store";
 
 export function SiteHeader() {
+  const { appName } = usePlatformBranding();
   const router = useRouter();
   const pathname = usePathname();
   const itemCount = useCartStore((s) => s.itemCount());
@@ -42,11 +43,11 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-            <span className="text-base font-bold text-primary-foreground">D</span>
+          <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
+            <PlatformBrandingMark className="size-9 text-base" imgClassName="p-1.5" />
           </div>
           <span className="hidden text-xl font-bold tracking-tight sm:block">
-            Delivio
+            {appName}
           </span>
         </Link>
 

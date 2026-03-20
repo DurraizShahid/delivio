@@ -10,6 +10,33 @@ const VALID_TARGETS = [
   'customer_mobile', 'rider_mobile', 'vendor_mobile',
 ];
 
+/** Keys merged from theme JSON but exposed as top-level in /api/public/theme (not CSS variables). */
+const BRANDING_KEYS = ['appName', 'logoUrl'];
+
+function pickBranding(mergedLight, mergedDark) {
+  const fromLight = {};
+  const fromDark = {};
+  for (const k of BRANDING_KEYS) {
+    if (mergedLight && mergedLight[k] != null && mergedLight[k] !== '') {
+      fromLight[k] = mergedLight[k];
+    }
+    if (mergedDark && mergedDark[k] != null && mergedDark[k] !== '') {
+      fromDark[k] = mergedDark[k];
+    }
+  }
+  return {
+    appName: fromLight.appName || fromDark.appName || undefined,
+    logoUrl: fromLight.logoUrl || fromDark.logoUrl || undefined,
+  };
+}
+
+function stripBrandingKeys(obj) {
+  if (!obj || typeof obj !== 'object') return {};
+  const next = { ...obj };
+  for (const k of BRANDING_KEYS) delete next[k];
+  return next;
+}
+
 class PlatformThemeModel extends BaseModel {
   constructor() {
     super('platform_themes');
@@ -102,7 +129,14 @@ class PlatformThemeModel extends BaseModel {
       Object.assign(mergedDark, dt);
     }
 
-    return { light: mergedLight, dark: mergedDark };
+    const { appName, logoUrl } = pickBranding(mergedLight, mergedDark);
+    const light = stripBrandingKeys(mergedLight);
+    const dark = stripBrandingKeys(mergedDark);
+
+    const out = { light, dark };
+    if (appName) out.appName = appName;
+    if (logoUrl) out.logoUrl = logoUrl;
+    return out;
   }
 }
 

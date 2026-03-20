@@ -304,6 +304,7 @@ export interface ApiClient {
       upsert(params: { appTarget: AppTarget; workspaceId?: string | null; lightTheme: ThemeColors; darkTheme: ThemeColors }): Promise<{ theme: PlatformTheme }>;
       delete(id: string): Promise<{ ok: boolean }>;
     };
+    uploadPlatformLogo(file: File): Promise<{ logoUrl: string }>;
     banners: {
       list(): Promise<{ banners: PlatformBanner[] }>;
       create(params: Partial<PlatformBanner> & { title: string }): Promise<{ banner: PlatformBanner }>;
@@ -631,6 +632,26 @@ export function createApiClient(baseUrl: string): ApiClient {
             body: JSON.stringify(params),
           }),
         delete: (id) => del(`/api/superadmin/themes/${id}`),
+      },
+      uploadPlatformLogo: async (file) => {
+        const formData = new FormData();
+        formData.append("logo", file);
+        const url = `${baseUrl}/api/superadmin/platform-logo`;
+        const res = await fetch(url, {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw Object.assign(
+            new Error(
+              (body as { error?: string }).error || res.statusText
+            ),
+            { statusCode: res.status, body }
+          );
+        }
+        return res.json() as Promise<{ logoUrl: string }>;
       },
       banners: {
         list: () => get("/api/superadmin/banners"),

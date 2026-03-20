@@ -13,6 +13,9 @@ const config = {
   port: parseInt(optional('PORT', '8080'), 10),
   isProd: process.env.NODE_ENV === 'production',
 
+  /** Absolute public base of this API (no trailing slash) — used for uploaded platform logo URLs */
+  publicServerUrl: optional('PUBLIC_SERVER_URL', '').replace(/\/$/, ''),
+
   session: {
     secret: optional('SESSION_SECRET', 'dev-secret-change-in-production'),
     adminTTL: 60 * 60 * 24,        // 24 hours in seconds

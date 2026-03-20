@@ -33,6 +33,7 @@ export default function RootLayout({
               apiUrl={API_URL}
               appName="rider_web"
               projectRef={PROJECT_REF}
+              fallbackAppName="Delivio Rider"
             >
               {children}
             </DynamicThemeProvider>

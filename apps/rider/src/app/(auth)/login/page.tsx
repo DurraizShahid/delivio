@@ -12,12 +12,15 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  PlatformBrandingMark,
+  usePlatformBranding,
 } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@delivio/types";
 
 export default function LoginPage() {
+  const { appName } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
@@ -71,12 +74,12 @@ export default function LoginPage() {
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
         <div className="mb-6 flex items-center justify-center">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
-              <span className="text-base font-bold">D</span>
+            <div className="flex size-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
+              <PlatformBrandingMark className="size-10 text-base" imgClassName="p-1.5" />
             </div>
             <div className="leading-tight">
               <div className="text-lg font-semibold tracking-tight">
-                Delivio Rider
+                {appName}
               </div>
               <div className="text-sm text-muted-foreground">
                 Deliveries & earnings

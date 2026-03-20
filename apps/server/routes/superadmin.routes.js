@@ -4,6 +4,7 @@ const { Router } = require('express');
 const controller = require('../controllers/superadmin.controller');
 const { validate } = require('../middleware/validate.middleware');
 const v = require('../validators/superadmin.validator');
+const { platformLogoUpload } = require('../middleware/platform-logo-upload.middleware');
 
 const router = Router();
 
@@ -38,6 +39,9 @@ router.get('/stats', controller.getStats);
 router.get('/themes', controller.listThemes);
 router.put('/themes', validate(v.upsertThemeSchema), controller.upsertTheme);
 router.delete('/themes/:id', controller.deleteTheme);
+
+// Platform branding asset
+router.post('/platform-logo', platformLogoUpload, controller.uploadPlatformLogo);
 
 // Banners
 router.get('/banners', controller.listBanners);

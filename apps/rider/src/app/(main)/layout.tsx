@@ -15,7 +15,7 @@ import {
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRiderAvailabilityLocation } from "@/hooks/use-rider-availability";
-import { Skeleton, cn, ThemeToggle } from "@delivio/ui";
+import { Skeleton, cn, ThemeToggle, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
 
 const navItems = [
   { href: "/", label: "Available", icon: PackageCheck },
@@ -31,6 +31,7 @@ export default function MainLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { appName } = usePlatformBranding();
   const pathname = usePathname();
   const router = useRouter();
   const hydrate = useAuthStore((s) => s.hydrate);
@@ -68,15 +69,15 @@ export default function MainLayout({
           <header className="sticky top-0 z-40 border-b border-border/60 bg-card/95 backdrop-blur-sm">
             <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
-                  <Bike className="size-4" />
+                <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
+                  <PlatformBrandingMark className="size-9 text-sm" imgClassName="p-1.5" />
                 </div>
                 <div className="leading-tight">
                   <div className="text-[15px] font-semibold tracking-tight">
-                    Rider
+                    {appName}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Fast actions, clear workflow
+                    Rider · Fast actions, clear workflow
                   </div>
                 </div>
               </div>

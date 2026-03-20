@@ -19,9 +19,14 @@ export { OrderStatusBadge } from "./components/order-status-badge";
 export { EmptyState } from "./components/empty-state";
 export { LoadingScreen } from "./components/loading-screen";
 export { PriceDisplay } from "./components/price-display";
+export { PlatformBrandingMark } from "./components/platform-branding-mark";
 
 // Providers
-export { DynamicThemeProvider } from "./providers/dynamic-theme-provider";
+export {
+  DynamicThemeProvider,
+  usePlatformBranding,
+  type PlatformBranding,
+} from "./providers/dynamic-theme-provider";
 export { ThemeToggle } from "./components/theme-toggle";
 
 // Utilities

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Loader2, ArrowRight, Store } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -12,12 +12,15 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  PlatformBrandingMark,
+  usePlatformBranding,
 } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 import type { User } from "@delivio/types";
 
 export default function VendorLoginPage() {
+  const { appName } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setUser = useAuthStore((s) => s.setUser);
@@ -43,6 +46,7 @@ export default function VendorLoginPage() {
         return;
       }
 
+      if (!("user" in result)) return;
       setUser(result.user as unknown as User);
       toast.success("Welcome back!");
       router.push("/");
@@ -69,11 +73,11 @@ export default function VendorLoginPage() {
 
       <div className="mx-auto flex min-h-screen w-full max-w-[420px] flex-col justify-center px-4 py-10">
         <div className="mb-8 flex flex-col items-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20">
-            <Store className="size-6" />
+          <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20">
+            <PlatformBrandingMark className="size-14 text-xl" imgClassName="p-2" />
           </div>
           <h1 className="mt-4 text-xl font-semibold tracking-tight">
-            Delivio Vendor
+            {appName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Sign in to manage your restaurant

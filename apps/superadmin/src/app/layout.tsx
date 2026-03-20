@@ -27,7 +27,11 @@ export default function RootLayout({
       <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <QueryProvider>
-            <DynamicThemeProvider apiUrl={API_URL} appName="superadmin_web">
+            <DynamicThemeProvider
+              apiUrl={API_URL}
+              appName="superadmin_web"
+              fallbackAppName="Delivio Platform Admin"
+            >
               {children}
             </DynamicThemeProvider>
             <Toaster />

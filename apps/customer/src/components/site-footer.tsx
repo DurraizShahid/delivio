@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
 
 export function SiteFooter() {
+  const { appName } = usePlatformBranding();
+
   return (
     <footer className="mt-auto border-t border-border/50 bg-muted/30">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
@@ -10,10 +13,10 @@ export function SiteFooter() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-                <span className="text-base font-bold text-primary-foreground">D</span>
+              <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
+                <PlatformBrandingMark className="size-9 text-base" imgClassName="p-1.5" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Delivio</span>
+              <span className="text-xl font-bold tracking-tight">{appName}</span>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Order food from the best restaurants near you. Fast delivery, easy
@@ -77,7 +80,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-10 border-t border-border/50 pt-6 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Delivio. All rights reserved.
+          &copy; {new Date().getFullYear()} {appName}. All rights reserved.
         </div>
       </div>
     </footer>

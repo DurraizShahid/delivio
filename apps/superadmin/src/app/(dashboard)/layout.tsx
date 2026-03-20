@@ -14,6 +14,7 @@ import {
   Shield,
   Palette,
   Megaphone,
+  Settings,
 } from "lucide-react";
 import { Button, Skeleton, cn, ThemeToggle } from "@delivio/ui";
 import { useAuthStore } from "@/stores/auth-store";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/orders", label: "Orders", icon: ClipboardList },
   { href: "/themes", label: "Themes", icon: Palette },
   { href: "/banners", label: "Banners", icon: Megaphone },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({

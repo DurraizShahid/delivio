@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { Button, Input } from "@delivio/ui";
+import { Button, Input, PlatformBrandingMark, usePlatformBranding } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
@@ -34,6 +34,7 @@ function isE164(phone: string) {
 }
 
 export default function LoginPage() {
+  const { appName } = usePlatformBranding();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const setCustomer = useAuthStore((s) => s.setCustomer);
@@ -109,10 +110,10 @@ export default function LoginPage() {
       <div className="hidden w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background lg:flex lg:items-center lg:justify-center">
         <div className="max-w-md px-12">
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-              <span className="text-xl font-bold text-primary-foreground">D</span>
+            <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-primary shadow-lg shadow-primary/25">
+              <PlatformBrandingMark className="size-12 text-xl" imgClassName="p-2" />
             </div>
-            <span className="text-3xl font-bold tracking-tight">Delivio</span>
+            <span className="text-3xl font-bold tracking-tight">{appName}</span>
           </div>
           <h2 className="mt-8 text-3xl font-bold leading-tight">
             Delicious food,
@@ -137,10 +138,10 @@ export default function LoginPage() {
             Back to home
           </Link>
           <div className="flex items-center gap-2 lg:hidden">
-            <div className="flex size-8 items-center justify-center rounded-xl bg-primary shadow-sm">
-              <span className="text-sm font-bold text-primary-foreground">D</span>
+            <div className="flex size-8 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
+              <PlatformBrandingMark className="size-8 text-sm" imgClassName="p-1" />
             </div>
-            <span className="font-bold">Delivio</span>
+            <span className="font-bold">{appName}</span>
           </div>
         </div>
 

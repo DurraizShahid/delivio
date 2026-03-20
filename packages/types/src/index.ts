@@ -422,6 +422,9 @@ export interface ThemeColors {
   card?: string;
   cardForeground?: string;
   border?: string;
+  /** Platform branding (global theme); not applied as CSS variables */
+  appName?: string;
+  logoUrl?: string;
 }
 
 export interface PlatformTheme {
@@ -437,6 +440,8 @@ export interface PlatformTheme {
 export interface ResolvedTheme {
   light: ThemeColors;
   dark: ThemeColors;
+  appName?: string;
+  logoUrl?: string;
 }
 
 // ─── Platform Banners ─────────────────────────────────────────────────────────

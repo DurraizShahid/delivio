@@ -69,6 +69,17 @@ const themeColorsSchema = z.object({
   card: z.string().max(100).optional(),
   cardForeground: z.string().max(100).optional(),
   border: z.string().max(100).optional(),
+  appName: z.string().trim().max(120).optional().nullable(),
+  logoUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .optional()
+    .nullable()
+    .refine(
+      (val) => val == null || val === '' || /^https?:\/\/.+/i.test(val),
+      { message: 'logoUrl must be an absolute http(s) URL or empty' },
+    ),
 });
 
 const upsertThemeSchema = z.object({

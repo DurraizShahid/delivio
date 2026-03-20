@@ -1,12 +1,21 @@
 'use strict';
 
 const { v4: uuidv4 } = require('uuid');
+const config = require('../config');
 const { select, insert, update, supabaseFetch } = require('../lib/supabase');
 const userModel = require('../models/user.model');
 const shopModel = require('../models/shop.model');
 const platformThemeModel = require('../models/platform-theme.model');
 const platformBannerModel = require('../models/platform-banner.model');
 const { mapWorkspace, mapShop } = require('../lib/case');
+const { PLATFORM_LOGO_PUBLIC_MOUNT } = require('../middleware/platform-logo-upload.middleware');
+
+function publicServerBase(req) {
+  if (config.publicServerUrl) return config.publicServerUrl;
+  const host = req.get('x-forwarded-host') || req.get('host') || 'localhost:8080';
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'http';
+  return `${proto}://${host}`.replace(/\/$/, '');
+}
 
 // ─── Workspaces ──────────────────────────────────────────────────────────────
 
@@ -322,6 +331,14 @@ async function getStats(req, res, next) {
 
 // ─── Themes ──────────────────────────────────────────────────────────────────
 
+function pruneThemePayload(theme) {
+  if (!theme || typeof theme !== 'object') return {};
+  const t = { ...theme };
+  if (t.appName === null || t.appName === '') delete t.appName;
+  if (t.logoUrl === null || t.logoUrl === '') delete t.logoUrl;
+  return t;
+}
+
 function mapTheme(row) {
   if (!row) return row;
   return {
@@ -353,7 +370,12 @@ async function listThemes(req, res, next) {
 async function upsertTheme(req, res, next) {
   try {
     const { appTarget, workspaceId, lightTheme, darkTheme } = req.body;
-    const row = await platformThemeModel.upsert(appTarget, workspaceId || null, lightTheme, darkTheme);
+    const row = await platformThemeModel.upsert(
+      appTarget,
+      workspaceId || null,
+      pruneThemePayload(lightTheme),
+      pruneThemePayload(darkTheme),
+    );
     return res.json({ theme: mapTheme(row) });
   } catch (err) {
     next(err);
@@ -365,6 +387,17 @@ async function deleteTheme(req, res, next) {
     const { id } = req.params;
     await platformThemeModel.deleteById(id);
     return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function uploadPlatformLogo(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const base = publicServerBase(req);
+    const logoUrl = `${base}${PLATFORM_LOGO_PUBLIC_MOUNT}/${req.file.filename}`;
+    return res.status(201).json({ logoUrl });
   } catch (err) {
     next(err);
   }
@@ -467,6 +500,7 @@ module.exports = {
   listThemes,
   upsertTheme,
   deleteTheme,
+  uploadPlatformLogo,
   listBanners,
   createBanner,
   updateBanner,
