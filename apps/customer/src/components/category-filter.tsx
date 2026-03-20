@@ -40,10 +40,10 @@ export function CategoryFilter({ active, onSelect }: CategoryFilterProps) {
           key={id}
           onClick={() => onSelect(id)}
           className={cn(
-            "group flex shrink-0 flex-col items-center gap-2 rounded-2xl px-4 py-3 transition-all",
+            "group flex shrink-0 flex-col items-center gap-2 rounded-2xl border px-4 py-3 transition-all duration-200",
             active === id
-              ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+              ? "border-primary/30 bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-lg shadow-primary/25 ring-2 ring-primary/15"
+              : "border-border/50 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm hover:border-primary/25 hover:bg-muted/80 hover:text-foreground hover:shadow-md"
           )}
         >
           <Icon

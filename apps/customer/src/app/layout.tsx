@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/providers/toaster";
 import { QueryProvider } from "@/providers/query-provider";
@@ -7,7 +7,11 @@ import { DynamicThemeProvider } from "@delivio/ui";
 import { buildCustomerMetadata } from "@/lib/platform-theme-metadata";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -25,7 +29,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" className={sans.variable} suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <QueryProvider>

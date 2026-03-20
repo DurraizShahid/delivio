@@ -11,13 +11,17 @@ export function SiteFooter() {
   const { appName, helpUrl, supportEmail } = usePlatformBranding();
 
   return (
-    <footer className="mt-auto border-t border-border/50 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
+    <footer className="relative mt-auto overflow-hidden border-t border-border/40 bg-gradient-to-b from-muted/40 via-muted/25 to-background">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
+        aria-hidden
+      />
+      <div className="relative mx-auto max-w-7xl px-4 py-14 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-primary shadow-sm">
+              <div className="flex size-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-md shadow-primary/20 ring-2 ring-primary/15">
                 <PlatformBrandingMark className="size-9 text-base" imgClassName="p-1.5" />
               </div>
               <PlatformWordmark>
@@ -92,18 +96,18 @@ export function SiteFooter() {
             <p className="mt-3 text-sm text-muted-foreground">
               Download our mobile app for a better experience on the go.
             </p>
-            <div className="mt-4 flex gap-2">
-              <div className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background">
+            <div className="mt-4 flex flex-wrap gap-2">
+              <div className="rounded-xl border border-border/60 bg-background/80 px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur-sm">
                 App Store
               </div>
-              <div className="rounded-lg bg-foreground px-4 py-2 text-xs font-medium text-background">
+              <div className="rounded-xl border border-border/60 bg-background/80 px-4 py-2 text-xs font-semibold shadow-sm backdrop-blur-sm">
                 Google Play
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border/50 pt-6 text-center text-xs text-muted-foreground">
+        <div className="mt-12 border-t border-border/40 pt-8 text-center text-xs text-muted-foreground">
           &copy; {new Date().getFullYear()} {appName}. All rights reserved.
         </div>
       </div>

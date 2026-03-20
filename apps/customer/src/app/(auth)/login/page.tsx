@@ -113,20 +113,35 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen">
       {/* Left side — decorative */}
-      <div className="hidden w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background lg:flex lg:items-center lg:justify-center">
-        <div className="max-w-md px-12">
+      <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary/[0.14] via-background to-accent/20 lg:flex lg:items-center lg:justify-center">
+        <div
+          className="absolute -left-20 top-1/4 size-72 rounded-full bg-[radial-gradient(circle_at_center,oklch(0.72_0.2_352_/_0.35),transparent_70%)] blur-3xl motion-safe:animate-ambient-drift"
+          aria-hidden
+        />
+        <div
+          className="absolute bottom-1/4 -right-10 size-64 rounded-full bg-[radial-gradient(circle_at_center,oklch(0.78_0.14_55_/_0.3),transparent_72%)] blur-3xl motion-safe:animate-ambient-drift-reverse"
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 opacity-40 [background-size:40px_40px] motion-reduce:opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(to right, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px)`,
+          }}
+          aria-hidden
+        />
+        <div className="relative max-w-md px-12">
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-primary shadow-lg shadow-primary/25">
+            <div className="flex size-12 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-xl shadow-primary/30 ring-2 ring-primary/20">
               <PlatformBrandingMark className="size-12 text-xl" imgClassName="p-2" />
             </div>
             <PlatformWordmark>
               <span className="text-3xl font-bold tracking-tight">{appName}</span>
             </PlatformWordmark>
           </div>
-          <h2 className="mt-8 text-3xl font-bold leading-tight">
+          <h2 className="mt-10 text-3xl font-extrabold leading-tight tracking-tight text-foreground">
             Delicious food,
             <br />
-            delivered fast.
+            <span className="text-primary">delivered fast.</span>
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Order from the best restaurants near you. Track your delivery in real-time.
@@ -156,8 +171,12 @@ export default function LoginPage() {
         </div>
 
         {/* Form */}
-        <div className="flex flex-1 items-center justify-center px-4">
-          <div className="w-full max-w-sm">
+        <div className="relative flex flex-1 items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_80%_12%,var(--primary)_0%,transparent_55%)] opacity-[0.12] dark:opacity-20"
+            aria-hidden
+          />
+          <div className="relative w-full max-w-sm rounded-3xl border border-border/50 bg-card/60 p-6 shadow-xl shadow-black/5 backdrop-blur-md dark:bg-card/40 dark:shadow-black/25 sm:p-8">
             <PromoBanner placement="login" />
             <div className="mb-8 text-center">
               <h1 className="text-2xl font-bold tracking-tight">

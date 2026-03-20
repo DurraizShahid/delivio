@@ -1,62 +1,51 @@
 "use client";
 
-import { Search, MapPin } from "lucide-react";
-import { useLocationStore } from "@/stores/location-store";
+import { Sparkles } from "lucide-react";
 
-interface HeroBannerProps {
-  searchValue: string;
-  onSearchChange: (value: string) => void;
-}
-
-export function HeroBanner({ searchValue, onSearchChange }: HeroBannerProps) {
-  const { address, status } = useLocationStore();
-
+export function HeroBanner() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-primary/10">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(var(--primary-rgb,0,0,0),0.08),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(var(--primary-rgb,0,0,0),0.05),transparent_50%)]" />
+    <section className="relative overflow-hidden border-b border-border/40">
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-primary/[0.12] via-background to-accent/[0.14]"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 opacity-[0.45] motion-reduce:opacity-20 [background-size:44px_44px] [mask-image:radial-gradient(ellipse_85%_55%_at_50%_18%,black,transparent)]"
+        style={{
+          backgroundImage: `linear-gradient(to right, color-mix(in oklab, var(--foreground) 7%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 7%, transparent) 1px, transparent 1px)`,
+        }}
+        aria-hidden
+      />
+      <div
+        className="absolute -left-24 top-1/2 size-[min(55vw,420px)] -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_center,oklch(0.72_0.2_352_/_0.32),transparent_68%)] blur-3xl motion-safe:animate-ambient-drift"
+        aria-hidden
+      />
+      <div
+        className="absolute -right-16 top-8 size-[min(48vw,380px)] rounded-full bg-[radial-gradient(circle_at_center,oklch(0.78_0.14_55_/_0.28),transparent_70%)] blur-3xl motion-safe:animate-ambient-drift-reverse"
+        aria-hidden
+      />
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+        aria-hidden
+      />
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:py-16 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
-            Delicious food,{" "}
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              delivered to you
-            </span>
-          </h1>
-          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            Discover the best restaurants and cuisines near you. Order your
-            favourite meals and get them delivered fast.
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary shadow-sm shadow-primary/10 backdrop-blur-sm dark:bg-primary/15">
+            <Sparkles className="size-3.5 shrink-0 opacity-90" aria-hidden />
+            Fast delivery · Local favourites
           </p>
 
-          {/* Search box */}
-          <div className="mx-auto mt-8 max-w-xl">
-            <div className="flex flex-col gap-3 sm:flex-row">
-              {status === "granted" && address && (
-                <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-4 py-3 text-sm backdrop-blur-sm sm:w-auto">
-                  <MapPin className="size-4 shrink-0 text-primary" />
-                  <span className="truncate text-muted-foreground">
-                    {address}
-                  </span>
-                </div>
-              )}
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search for restaurant or cuisine..."
-                  value={searchValue}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-border/60 bg-background/80 pl-12 pr-4 text-sm shadow-sm backdrop-blur-sm outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary/50 focus:shadow-md focus:ring-2 focus:ring-primary/20 sm:text-base"
-                />
-              </div>
-            </div>
-          </div>
+          <h1 className="text-balance text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl lg:leading-[1.08]">
+            Delicious food,{" "}
+            <span className="text-primary">delivered to you</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
+            Discover standout restaurants near you. Crave-it-now energy, without
+            the clutter — order in seconds and track every step.
+          </p>
         </div>
       </div>
-
-      {/* Decorative bottom wave */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
     </section>
   );
 }

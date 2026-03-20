@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useLocationStore } from "@/stores/location-store";
+import { useBrowseSearchStore } from "@/stores/browse-search-store";
 import { HeroBanner } from "@/components/hero-banner";
 import { CategoryFilter } from "@/components/category-filter";
 import { RestaurantCard } from "@/components/restaurant-card";
@@ -21,7 +22,7 @@ const DEMO_REFS = (
   .filter((ref, idx, arr) => arr.indexOf(ref) === idx);
 
 export default function HomePage() {
-  const [search, setSearch] = useState("");
+  const search = useBrowseSearchStore((s) => s.query);
   const [activeCategory, setActiveCategory] = useState("all");
   const { lat, lon, status } = useLocationStore();
 
@@ -60,7 +61,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <HeroBanner searchValue={search} onSearchChange={setSearch} />
+      <HeroBanner />
 
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
         <PromoBanner placement="home_below_hero" />
@@ -82,10 +83,22 @@ export default function HomePage() {
 
         {/* Category filter */}
         <section className="mt-10">
-          <div className="mb-5 flex items-center gap-2">
-            <TrendingUp className="size-5 text-primary" />
-            <h2 className="text-lg font-bold sm:text-xl">
-              {search ? `Results for "${search}"` : "Restaurants near you"}
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/15 shadow-sm">
+              <TrendingUp className="size-5" />
+            </span>
+            <h2 className="text-lg font-extrabold tracking-tight text-foreground sm:text-xl">
+              {search ? (
+                <>
+                  Results for{" "}
+                  <span className="text-primary">&ldquo;{search}&rdquo;</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-primary">Restaurants</span>
+                  <span> near you</span>
+                </>
+              )}
             </h2>
             {shops && (
               <span className="ml-auto text-sm text-muted-foreground">
@@ -102,8 +115,11 @@ export default function HomePage() {
           {isLoading || status === "loading" ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="overflow-hidden rounded-2xl border border-border/50">
-                  <Skeleton className="aspect-[16/10] w-full" />
+                <div
+                  key={i}
+                  className="overflow-hidden rounded-2xl border border-border/50 bg-card/50 shadow-sm backdrop-blur-sm"
+                >
+                  <Skeleton className="aspect-[16/10] w-full rounded-none" />
                   <div className="p-4">
                     <Skeleton className="mb-2 h-5 w-2/3" />
                     <Skeleton className="mb-3 h-4 w-full" />
@@ -113,11 +129,11 @@ export default function HomePage() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex size-20 items-center justify-center rounded-full bg-muted">
-                <Store className="size-10 text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/70 bg-muted/30 px-6 py-20 text-center shadow-inner dark:bg-muted/15">
+              <div className="flex size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-accent/10 text-primary ring-2 ring-primary/15">
+                <Store className="size-10" />
               </div>
-              <h3 className="mt-5 text-lg font-semibold">No restaurants found</h3>
+              <h3 className="mt-5 text-lg font-bold tracking-tight">No restaurants found</h3>
               <p className="mt-2 max-w-sm text-sm text-muted-foreground">
                 {search
                   ? "Try a different search term or clear your filters"

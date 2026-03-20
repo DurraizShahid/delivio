@@ -38,7 +38,7 @@ function PromoBannerCard({ b }: { b: PlatformBanner }) {
   return (
     <div
       className={cn(
-        "group relative flex w-full min-w-[280px] flex-1 flex-col justify-between overflow-hidden rounded-2xl sm:min-w-[300px]",
+        "group relative flex w-full min-w-[280px] flex-1 flex-col justify-between overflow-hidden rounded-2xl shadow-md shadow-black/10 ring-1 ring-black/5 sm:min-w-[300px] dark:ring-white/10",
         hasImage ? "bg-muted" : `bg-gradient-to-r ${b.bgGradient}`,
         !aspect.aspectRatio && "min-h-[180px] sm:min-h-[200px]",
         cta && "cursor-pointer"
@@ -189,7 +189,10 @@ export function PromoBanner({
       }
     >
       {showPromotionsHeading && (
-        <h2 className="mb-4 text-lg font-bold sm:text-xl">Promotions</h2>
+        <h2 className="mb-4 text-lg font-extrabold tracking-tight text-foreground sm:text-xl">
+          <span className="text-primary">Promotions</span>
+          <span> & offers</span>
+        </h2>
       )}
       <div
         className={cn(
