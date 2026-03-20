@@ -37,6 +37,7 @@ export function WSProvider({ children }: { children: React.ReactNode }) {
       }),
       client.subscribe("order:status_changed", () => {
         queryClient.invalidateQueries({ queryKey: ["deliveries"] });
+        queryClient.invalidateQueries({ queryKey: ["tips", "mine"] });
       }),
       client.subscribe("chat:message", () => {
         queryClient.invalidateQueries({ queryKey: ["conversations"] });

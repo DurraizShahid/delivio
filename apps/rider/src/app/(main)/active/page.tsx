@@ -26,6 +26,7 @@ import { cn } from "@delivio/ui";
 import { useActiveDelivery } from "@/hooks/use-deliveries";
 import { api } from "@/lib/api";
 import type { Delivery, DeliveryStatus } from "@delivio/types";
+import { RiderPageHeader } from "@/components/rider-page-header";
 
 const STEPS: { key: DeliveryStatus; label: string; icon: typeof Package }[] = [
   { key: "assigned", label: "Assigned", icon: Package },
@@ -99,11 +100,11 @@ export default function ActiveDeliveryPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
-          <p className="text-sm text-muted-foreground">Preparing your current mission...</p>
-        </div>
+      <div className="space-y-5">
+        <RiderPageHeader
+          title="Active delivery"
+          description="Preparing your current mission…"
+        />
         <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     );
@@ -111,13 +112,11 @@ export default function ActiveDeliveryPage() {
 
   if (!delivery) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
-          <p className="text-sm text-muted-foreground">
-            You are currently not handling an order.
-          </p>
-        </div>
+      <div className="space-y-5">
+        <RiderPageHeader
+          title="Active delivery"
+          description="You are not handling an order right now."
+        />
         <EmptyState
           icon={<Bike />}
           title="No active delivery"
@@ -131,22 +130,18 @@ export default function ActiveDeliveryPage() {
   const nextStatus = getNextStatus(delivery.status);
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Active Delivery</h1>
-            <p className="text-sm text-muted-foreground">
-              Order #{delivery.orderId.slice(0, 8)}
-            </p>
-          </div>
-          <div className="rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+    <div className="space-y-5">
+      <RiderPageHeader
+        title="Active delivery"
+        description={`Order #${delivery.orderId.slice(0, 8)}`}
+        badge={
+          <span className="rounded-lg border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
             {delivery.status.replace("_", " ")}
-          </div>
-        </div>
-      </div>
+          </span>
+        }
+      />
 
-      <Card className="border-border/70 shadow-sm">
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Delivery Progress</CardTitle>
         </CardHeader>

@@ -39,4 +39,14 @@ async function getRiderTips(req, res, next) {
   }
 }
 
-module.exports = { createTip, getRiderTips };
+async function getMyTips(req, res, next) {
+  try {
+    const riderId = req.user.id;
+    const totalCents = await tipModel.totalForRider(riderId);
+    return res.json({ riderId, totalCents });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createTip, getRiderTips, getMyTips };

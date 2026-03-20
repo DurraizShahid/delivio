@@ -31,9 +31,10 @@ export default function GeofenceDrawerMap({
     if (!containerRef.current || mapRef.current) return;
 
     let center: [number, number] = DEFAULT_CENTER;
-    if (geofence?.coordinates?.[0]?.length > 2) {
-      const lats = geofence.coordinates[0].map((c) => c[1]);
-      const lngs = geofence.coordinates[0].map((c) => c[0]);
+    const ring = geofence?.coordinates?.[0];
+    if (ring && ring.length > 2) {
+      const lats = ring.map((c) => c[1]);
+      const lngs = ring.map((c) => c[0]);
       center = [
         (Math.min(...lats) + Math.max(...lats)) / 2,
         (Math.min(...lngs) + Math.max(...lngs)) / 2,
@@ -50,8 +51,8 @@ export default function GeofenceDrawerMap({
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
-    if (geofence?.coordinates?.[0]?.length > 2) {
-      const latlngs = geofence.coordinates[0].map(
+    if (ring && ring.length > 2) {
+      const latlngs = ring.map(
         (coord) => [coord[1], coord[0]] as [number, number]
       );
       const polygon = L.polygon(latlngs, {

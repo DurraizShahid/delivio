@@ -67,7 +67,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+    <div className="flex h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border/80 px-4 py-3">
         <Button
           variant="ghost"

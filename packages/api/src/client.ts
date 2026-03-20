@@ -175,7 +175,8 @@ export interface ApiClient {
       toRiderId: string;
       amountCents: number;
     }): Promise<Tip>;
-    getByRider(riderId: string): Promise<{ total: number }>;
+    getByRider(riderId: string): Promise<{ riderId: string; totalCents: number }>;
+    getMine(): Promise<{ riderId: string; totalCents: number }>;
   };
   shops: {
     list(params?: { includeInactive?: boolean }): Promise<{ shops: Shop[] }>;
@@ -446,6 +447,7 @@ export function createApiClient(baseUrl: string): ApiClient {
     tips: {
       create: (params) => post("/api/tips", params),
       getByRider: (riderId) => get(`/api/tips/rider/${riderId}`),
+      getMine: () => get("/api/tips/me"),
     },
     shops: {
       list: (params) => {

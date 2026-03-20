@@ -9,6 +9,7 @@ import {
   Badge,
 } from "@delivio/ui";
 import { useDeliveryHistory } from "@/hooks/use-deliveries";
+import { RiderPageHeader } from "@/components/rider-page-header";
 
 export default function HistoryPage() {
   const { data: deliveries, isLoading } = useDeliveryHistory();
@@ -22,25 +23,24 @@ export default function HistoryPage() {
       : 0;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight">Delivery History</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Track completed drops and performance at a glance.
-        </p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-border/60 bg-background p-3">
+    <div className="space-y-5">
+      <RiderPageHeader
+        title="Delivery history"
+        description="Track completed drops and performance at a glance."
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-border/60 bg-background/80 p-3">
             <div className="text-xs text-muted-foreground">Completed</div>
-            <div className="mt-1 text-base font-semibold">{totalCompleted}</div>
+            <div className="mt-1 text-base font-semibold tabular-nums">{totalCompleted}</div>
           </div>
-          <div className="rounded-xl border border-border/60 bg-background p-3">
+          <div className="rounded-xl border border-border/60 bg-background/80 p-3">
             <div className="text-xs text-muted-foreground">Avg ETA</div>
-            <div className="mt-1 text-base font-semibold">
-              {averageEta > 0 ? `${averageEta}m` : "--"}
+            <div className="mt-1 text-base font-semibold tabular-nums">
+              {averageEta > 0 ? `${averageEta}m` : "—"}
             </div>
           </div>
         </div>
-      </div>
+      </RiderPageHeader>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -57,7 +57,7 @@ export default function HistoryPage() {
       ) : (
         <div className="space-y-3">
           {deliveries.map((delivery) => (
-            <Card key={delivery.id} className="border-border/70 shadow-sm">
+            <Card key={delivery.id} className="border-border/60 shadow-sm">
               <CardContent className="flex items-center justify-between gap-3 p-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

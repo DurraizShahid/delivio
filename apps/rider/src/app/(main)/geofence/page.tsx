@@ -16,6 +16,7 @@ import {
 import type { GeoPolygon, RiderGeofence } from "@delivio/types";
 import { api } from "@/lib/api";
 import { GeofenceDrawerMap } from "@/components/map";
+import { RiderPageHeader } from "@/components/rider-page-header";
 
 export default function RiderGeofencePage() {
   const queryClient = useQueryClient();
@@ -49,32 +50,30 @@ export default function RiderGeofencePage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Delivery Zone</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Draw where you want to receive delivery requests.
-          </p>
-        </div>
-        <Button
-          className="shrink-0 gap-2 rounded-lg"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending || !hasChanges}
-        >
-          {saveMutation.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Save className="size-4" />
-          )}
-          Save Zone
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <RiderPageHeader
+        title="Delivery zone"
+        description="Draw where you want to receive delivery requests."
+        action={
+          <Button
+            className="gap-2 rounded-lg"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !hasChanges}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            Save zone
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <Skeleton className="h-[500px] w-full rounded-xl" />
       ) : (
-        <Card className="border-border/70 shadow-sm">
+        <Card className="border-border/60 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <MapPin className="size-4" />

@@ -13,6 +13,7 @@ import {
   Badge,
 } from "@delivio/ui";
 import { useAuthStore } from "@/stores/auth-store";
+import { RiderPageHeader } from "@/components/rider-page-header";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -38,15 +39,13 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight">Account</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your rider profile and access details.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <RiderPageHeader
+        title="Account"
+        description="Manage your rider profile and access details."
+      />
 
-      <Card className="border-border/70 shadow-sm">
+      <Card className="border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Profile</CardTitle>
         </CardHeader>

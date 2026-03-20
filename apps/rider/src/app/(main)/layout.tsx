@@ -10,6 +10,7 @@ import {
   MessageCircle,
   User,
   MapPin,
+  Wallet,
 } from "lucide-react";
 import { WSProvider } from "@/providers/ws-provider";
 import { useAuthStore } from "@/stores/auth-store";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/active", label: "Active", icon: Bike },
   { href: "/geofence", label: "Zone", icon: MapPin },
   { href: "/history", label: "History", icon: Clock },
+  { href: "/earnings", label: "Earnings", icon: Wallet },
   { href: "/chat", label: "Chat", icon: MessageCircle },
 ];
 
@@ -48,7 +50,7 @@ export default function MainLayout({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-lg space-y-3">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-52 w-full rounded-xl" />
@@ -61,19 +63,19 @@ export default function MainLayout({
 
   return (
     <WSProvider>
-      <div className="min-h-screen bg-muted/25">
+      <div className="min-h-screen bg-background">
         <div className="flex min-h-screen flex-col">
-          <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-lg">
-            <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4">
+          <header className="sticky top-0 z-40 border-b border-border/60 bg-card/95 backdrop-blur-sm">
+            <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
               <div className="flex items-center gap-3">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-sm">
                   <Bike className="size-4" />
                 </div>
                 <div className="leading-tight">
-                  <div className="text-sm font-semibold tracking-tight">
+                  <div className="text-[15px] font-semibold tracking-tight">
                     Rider
                   </div>
-                  <div className="text-xs text-muted-foreground/90">
+                  <div className="text-xs text-muted-foreground">
                     Fast actions, clear workflow
                   </div>
                 </div>
@@ -96,13 +98,13 @@ export default function MainLayout({
           </header>
 
           <main className="flex-1 pb-24">
-            <div className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6">
+            <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
               {children}
             </div>
           </main>
 
-          <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
-            <div className="mx-auto flex max-w-3xl items-center justify-between gap-1 px-2 py-2 sm:px-4">
+          <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm">
+            <div className="mx-auto flex max-w-3xl items-center justify-between gap-0.5 px-1 py-1.5 sm:px-3">
               {navItems.map(({ href, label, icon: Icon }) => {
                 const isActive =
                   href === "/"
@@ -113,14 +115,23 @@ export default function MainLayout({
                     key={href}
                     href={href}
                     className={cn(
-                      "flex min-w-0 flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-medium transition-all",
+                      "flex min-w-0 flex-1 flex-col items-center gap-2 rounded-xl px-1 py-px text-[10px] font-medium transition-all sm:flex-row sm:gap-1.5 sm:px-2 sm:py-2 sm:text-xs",
                       isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-accent/80 hover:text-foreground"
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
-                    <span className="truncate">{label}</span>
+                    <span
+                      className={cn(
+                        "flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors sm:size-8",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <Icon className="size-[18px] sm:size-4" />
+                    </span>
+                    <span className="truncate leading-none">{label}</span>
                   </Link>
                 );
               })}

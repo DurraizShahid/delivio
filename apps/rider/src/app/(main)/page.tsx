@@ -15,6 +15,7 @@ import {
 import { useAvailableDeliveries } from "@/hooks/use-deliveries";
 import { useWSEvent } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
+import { RiderPageHeader } from "@/components/rider-page-header";
 
 export default function AvailableDeliveriesPage() {
   const queryClient = useQueryClient();
@@ -48,41 +49,37 @@ export default function AvailableDeliveriesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Available Deliveries</h1>
-            <p className="text-sm text-muted-foreground">
-              New offers appear in real-time. Claim quickly to lock them in.
-            </p>
-          </div>
-          <Badge className="rounded-md bg-primary/10 text-primary hover:bg-primary/10">
+    <div className="space-y-5">
+      <RiderPageHeader
+        title="Available deliveries"
+        description="New offers appear in real-time. Claim quickly to lock them in."
+        badge={
+          <Badge className="rounded-md border border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
             Live
           </Badge>
-        </div>
-
+        }
+      >
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-border/60 bg-background p-3">
+          <div className="rounded-xl border border-border/60 bg-background/80 p-3">
             <div className="text-xs text-muted-foreground">Offers</div>
-            <div className="mt-1 flex items-center gap-1 text-base font-semibold">
+            <div className="mt-1 flex items-center gap-1 text-base font-semibold tabular-nums">
               <BellRing className="size-4 text-primary" />
               {totalOffers}
             </div>
           </div>
-          <div className="rounded-xl border border-border/60 bg-background p-3">
+          <div className="rounded-xl border border-border/60 bg-background/80 p-3">
             <div className="text-xs text-muted-foreground">Quick ETA</div>
-            <div className="mt-1 flex items-center gap-1 text-base font-semibold">
+            <div className="mt-1 flex items-center gap-1 text-base font-semibold tabular-nums">
               <Zap className="size-4 text-primary" />
               {quickOffers}
             </div>
           </div>
-          <div className="rounded-xl border border-border/60 bg-background p-3">
+          <div className="rounded-xl border border-border/60 bg-background/80 p-3">
             <div className="text-xs text-muted-foreground">Status</div>
             <div className="mt-1 text-base font-semibold">Online</div>
           </div>
         </div>
-      </section>
+      </RiderPageHeader>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -99,7 +96,7 @@ export default function AvailableDeliveriesPage() {
       ) : (
         <div className="space-y-3">
           {deliveries.map((delivery) => (
-            <Card key={delivery.id} className="overflow-hidden border-border/70 shadow-sm">
+            <Card key={delivery.id} className="overflow-hidden border-border/60 shadow-sm">
               <CardContent className="p-4">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="space-y-1">

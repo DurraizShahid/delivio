@@ -52,6 +52,8 @@ All share `@delivio/api`, `@delivio/types`, `@delivio/ui`.
 1. Email/password login → `admin_session` cookie.
 2. Session check on mount via `/api/auth/session`.
 3. Rider-specific pages gated by `requireRole('rider')`.
+4. **Theming:** `DynamicThemeProvider` with `appName="rider_web"` + `NEXT_PUBLIC_PROJECT_REF` — same mechanism as other apps; static CSS tokens in `globals.css` match superadmin fallbacks.
+5. **Earnings:** `/earnings` uses `api.tips.getMine()` for tip totals plus delivery history for activity stats.
 
 ## Auth Flow (Superadmin App)
 
