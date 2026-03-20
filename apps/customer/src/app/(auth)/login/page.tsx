@@ -8,6 +8,7 @@ import { Button, Input } from "@delivio/ui";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-store";
 import Link from "next/link";
+import { PromoBanner } from "@/components/promo-banner";
 
 const PROJECT_REF = process.env.NEXT_PUBLIC_PROJECT_REF || "demo";
 
@@ -146,6 +147,7 @@ export default function LoginPage() {
         {/* Form */}
         <div className="flex flex-1 items-center justify-center px-4">
           <div className="w-full max-w-sm">
+            <PromoBanner placement="login" />
             <div className="mb-8 text-center">
               <h1 className="text-2xl font-bold tracking-tight">
                 {step === "phone" ? "Welcome back" : "Verify your code"}

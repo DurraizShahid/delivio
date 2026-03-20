@@ -11,6 +11,7 @@ import {
 } from "@delivio/ui";
 import { useOrders } from "@/hooks/use-orders";
 import { useAuthStore } from "@/stores/auth-store";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function OrdersPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -38,6 +39,7 @@ export default function OrdersPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
+      <PromoBanner placement="orders_list" />
       <h1 className="mb-6 text-2xl font-bold">Your Orders</h1>
 
       {isLoading ? (

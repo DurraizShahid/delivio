@@ -17,6 +17,7 @@ import { Button, Skeleton, Separator } from "@delivio/ui";
 import { useAuthStore } from "@/stores/auth-store";
 import { useCartStore } from "@/stores/cart-store";
 import Link from "next/link";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 lg:px-8">
+      <PromoBanner placement="account" />
       <h1 className="mb-8 text-2xl font-bold">Account</h1>
 
       {/* Profile card */}

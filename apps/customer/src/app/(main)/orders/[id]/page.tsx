@@ -26,6 +26,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useWSEvent } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
 import type { OrderStatus, Order } from "@delivio/types";
+import { PromoBanner } from "@/components/promo-banner";
 
 const ORDER_STEPS: { status: OrderStatus; label: string }[] = [
   { status: "placed", label: "Placed" },
@@ -290,6 +291,7 @@ export default function OrderDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
+      <PromoBanner placement="order_detail" />
       {/* Header */}
       <div className="mb-6 flex items-center gap-4">
         <button

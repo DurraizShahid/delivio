@@ -7,6 +7,7 @@ import { MessageCircle, ChevronRight, ArrowLeft } from "lucide-react";
 import { Skeleton } from "@delivio/ui";
 import { useConversations } from "@/hooks/use-chat";
 import { useAuthStore } from "@/stores/auth-store";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function ChatListPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -34,7 +35,8 @@ export default function ChatListPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
-      <div className="mb-6 flex items-center gap-4">
+      <PromoBanner placement="chat_list" />
+      <div className="mb-6 mt-2 flex items-center gap-4">
         <button
           onClick={() => router.back()}
           className="flex size-10 items-center justify-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

@@ -17,6 +17,7 @@ import { Button, Skeleton, PriceDisplay, cn } from "@delivio/ui";
 import { useProducts, useWorkspace } from "@/hooks/use-products";
 import { useCartStore } from "@/stores/cart-store";
 import type { Product } from "@delivio/types";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function RestaurantPage() {
   const { ref } = useParams<{ ref: string }>();
@@ -138,6 +139,10 @@ export default function RestaurantPage() {
             <span>25-35 min</span>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+        <PromoBanner placement="restaurant_menu" />
       </div>
 
       {/* Category nav */}

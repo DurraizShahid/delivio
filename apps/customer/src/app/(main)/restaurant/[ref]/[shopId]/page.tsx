@@ -18,6 +18,7 @@ import { Button, Skeleton, PriceDisplay, cn } from "@delivio/ui";
 import { useProducts, useShopDetail, useShopCategories } from "@/hooks/use-products";
 import { useCartStore } from "@/stores/cart-store";
 import type { Product } from "@delivio/types";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function ShopMenuPage() {
   const { ref, shopId } = useParams<{ ref: string; shopId: string }>();
@@ -182,6 +183,10 @@ export default function ShopMenuPage() {
             <span>More info</span>
           </button>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-4 lg:px-8">
+        <PromoBanner placement="restaurant_menu" />
       </div>
 
       {/* Category nav */}

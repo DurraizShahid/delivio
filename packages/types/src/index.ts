@@ -441,6 +441,30 @@ export interface ResolvedTheme {
 
 // ─── Platform Banners ─────────────────────────────────────────────────────────
 
+export type {
+  PlatformBannerImageResize,
+} from "./banner-styles";
+export {
+  getPlatformBannerImageBackgroundStyle,
+  getPlatformBannerImageOnlyBackgroundStyle,
+} from "./banner-styles";
+
+export type {
+  PlatformBannerAspectPreset,
+  PlatformBannerAspectOption,
+} from "./banner-presets";
+export {
+  PLATFORM_BANNER_ASPECT_PRESETS,
+  getPlatformBannerSlideUrls,
+  getPlatformBannerAspectStyle,
+} from "./banner-presets";
+
+export type {
+  PlatformBannerPlacement,
+  PlatformBannerPlacementOption,
+} from "./banner-placements";
+export { PLATFORM_BANNER_PLACEMENTS } from "./banner-placements";
+
 export interface PlatformBanner {
   id: string;
   title: string;
@@ -448,7 +472,13 @@ export interface PlatformBanner {
   ctaText?: string | null;
   ctaLink?: string | null;
   imageUrl?: string | null;
+  /** When carousel is enabled, ordered slide URLs (first is also `imageUrl`). */
+  imageUrls?: string[] | null;
+  carouselEnabled?: boolean;
   imageScale?: number;
+  imageResize?: import("./banner-styles").PlatformBannerImageResize;
+  imageAspectPreset?: import("./banner-presets").PlatformBannerAspectPreset;
+  placement?: import("./banner-placements").PlatformBannerPlacement;
   bgGradient: string;
   textColor: string;
   sortOrder: number;

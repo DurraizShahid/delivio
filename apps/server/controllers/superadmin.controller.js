@@ -372,6 +372,17 @@ async function deleteTheme(req, res, next) {
 
 // ─── Banners ─────────────────────────────────────────────────────────────────
 
+function parseBannerImageUrls(row) {
+  if (!row?.image_urls) return [];
+  if (Array.isArray(row.image_urls)) return row.image_urls;
+  try {
+    const p = typeof row.image_urls === 'string' ? JSON.parse(row.image_urls) : row.image_urls;
+    return Array.isArray(p) ? p : [];
+  } catch {
+    return [];
+  }
+}
+
 function mapBanner(row) {
   if (!row) return row;
   return {
@@ -381,7 +392,12 @@ function mapBanner(row) {
     ctaText: row.cta_text,
     ctaLink: row.cta_link,
     imageUrl: row.image_url,
+    imageUrls: parseBannerImageUrls(row),
+    carouselEnabled: row.carousel_enabled ?? false,
     imageScale: row.image_scale ?? 100,
+    imageResize: row.image_resize ?? 'center',
+    imageAspectPreset: row.image_aspect_preset ?? 'auto',
+    placement: row.placement ?? 'home_promotions',
     bgGradient: row.bg_gradient,
     textColor: row.text_color,
     sortOrder: row.sort_order,

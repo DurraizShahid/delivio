@@ -9,6 +9,7 @@ import { useMessages } from "@/hooks/use-chat";
 import { useAuthStore } from "@/stores/auth-store";
 import { useWSEvent, useWS } from "@/providers/ws-provider";
 import { api } from "@/lib/api";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function ChatPage() {
   const { id: conversationId } = useParams<{ id: string }>();
@@ -79,6 +80,9 @@ export default function ChatPage() {
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col">
+      <div className="shrink-0 border-b border-border/50 px-4 py-2 lg:px-8">
+        <PromoBanner placement="chat_thread" />
+      </div>
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3 lg:px-8">
         <button

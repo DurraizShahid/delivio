@@ -63,6 +63,7 @@ export default function HomePage() {
       <HeroBanner searchValue={search} onSearchChange={setSearch} />
 
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
+        <PromoBanner placement="home_below_hero" />
         {/* Location warning */}
         {status === "denied" && (
           <div className="mt-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-950/30 dark:text-amber-200">
@@ -77,7 +78,7 @@ export default function HomePage() {
         )}
 
         {/* Promo banners — only rendered when API returns banners */}
-        <PromoBanner />
+        <PromoBanner placement="home_promotions" />
 
         {/* Category filter */}
         <section className="mt-10">
@@ -93,6 +94,7 @@ export default function HomePage() {
             )}
           </div>
           <CategoryFilter active={activeCategory} onSelect={setActiveCategory} />
+          <PromoBanner placement="restaurant_list" />
         </section>
 
         {/* Restaurant grid */}

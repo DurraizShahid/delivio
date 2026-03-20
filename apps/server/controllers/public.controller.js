@@ -269,9 +269,23 @@ async function resolveTheme(req, res, next) {
   }
 }
 
+function parsePublicBannerImageUrls(row) {
+  if (!row?.image_urls) return [];
+  if (Array.isArray(row.image_urls)) return row.image_urls;
+  try {
+    const p = typeof row.image_urls === 'string' ? JSON.parse(row.image_urls) : row.image_urls;
+    return Array.isArray(p) ? p : [];
+  } catch {
+    return [];
+  }
+}
+
 async function listActiveBanners(req, res, next) {
   try {
-    const rows = await platformBannerModel.listActive();
+    const raw =
+      typeof req.query.placement === 'string' ? req.query.placement.trim() : '';
+    const placement = raw || 'home_promotions';
+    const rows = await platformBannerModel.listActiveByPlacement(placement);
     const banners = (rows || []).map((r) => ({
       id: r.id,
       title: r.title,
@@ -279,7 +293,12 @@ async function listActiveBanners(req, res, next) {
       ctaText: r.cta_text,
       ctaLink: r.cta_link,
       imageUrl: r.image_url,
+      imageUrls: parsePublicBannerImageUrls(r),
+      carouselEnabled: r.carousel_enabled ?? false,
       imageScale: r.image_scale ?? 100,
+      imageResize: r.image_resize ?? 'center',
+      imageAspectPreset: r.image_aspect_preset ?? 'auto',
+      placement: r.placement ?? 'home_promotions',
       bgGradient: r.bg_gradient,
       textColor: r.text_color,
       sortOrder: r.sort_order,

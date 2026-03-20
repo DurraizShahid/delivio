@@ -1,15 +1,178 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@delivio/ui";
 import { api } from "@/lib/api";
-import type { PlatformBanner } from "@delivio/types";
+import {
+  getPlatformBannerAspectStyle,
+  getPlatformBannerImageBackgroundStyle,
+  getPlatformBannerSlideUrls,
+  type PlatformBanner,
+  type PlatformBannerPlacement,
+} from "@delivio/types";
 
-export function PromoBanner() {
+function PromoBannerCard({ b }: { b: PlatformBanner }) {
+  const slides = getPlatformBannerSlideUrls(b);
+  const useCarousel = Boolean(b.carouselEnabled && slides.length > 1);
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    setIdx(0);
+  }, [b.id, slides.join("|")]);
+
+  useEffect(() => {
+    if (!useCarousel) return;
+    const t = setInterval(
+      () => setIdx((i) => (i + 1) % slides.length),
+      5500
+    );
+    return () => clearInterval(t);
+  }, [useCarousel, slides.length, b.id]);
+
+  const aspect = getPlatformBannerAspectStyle(b.imageAspectPreset);
+  const hasImage = slides.length > 0;
+  const cta = b.ctaLink || undefined;
+
+  return (
+    <div
+      className={cn(
+        "group relative flex w-full min-w-[280px] flex-1 flex-col justify-between overflow-hidden rounded-2xl sm:min-w-[300px]",
+        hasImage ? "bg-muted" : `bg-gradient-to-r ${b.bgGradient}`,
+        !aspect.aspectRatio && "min-h-[180px] sm:min-h-[200px]",
+        cta && "cursor-pointer"
+      )}
+      style={aspect.aspectRatio ? aspect : undefined}
+    >
+      {hasImage && (
+        <div className="absolute inset-0 z-0">
+          {useCarousel ? (
+            slides.map((url, i) => (
+              <div
+                key={`${url}-${i}`}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-500",
+                  i === idx ? "opacity-100" : "opacity-0"
+                )}
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${url})`,
+                  ...getPlatformBannerImageBackgroundStyle(
+                    b.imageScale ?? 100,
+                    b.imageResize
+                  ),
+                }}
+              />
+            ))
+          ) : (
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${slides[0]})`,
+                ...getPlatformBannerImageBackgroundStyle(
+                  b.imageScale ?? 100,
+                  b.imageResize
+                ),
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {cta && (
+        <a
+          href={cta}
+          className="absolute inset-0 z-[5]"
+          aria-label={b.ctaText || b.title}
+        >
+          <span className="sr-only">{b.ctaText || b.title}</span>
+        </a>
+      )}
+
+      {useCarousel && (
+        <>
+          <button
+            type="button"
+            className="absolute left-2 top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+            aria-label="Previous slide"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIdx((i) => (i - 1 + slides.length) % slides.length);
+            }}
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+            aria-label="Next slide"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIdx((i) => (i + 1) % slides.length);
+            }}
+          >
+            <ChevronRight className="size-4" />
+          </button>
+          <div
+            className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-1.5"
+            aria-hidden
+          >
+            {slides.map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full transition-colors",
+                  i === idx ? "bg-white" : "bg-white/40"
+                )}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
+
+      <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col justify-between p-5 sm:p-6">
+        <div>
+          <h3
+            className="text-lg font-bold leading-tight sm:text-xl"
+            style={{ color: b.textColor }}
+          >
+            {b.title}
+          </h3>
+          {b.subtitle && (
+            <p
+              className="mt-1 text-sm"
+              style={{ color: b.textColor, opacity: 0.8 }}
+            >
+              {b.subtitle}
+            </p>
+          )}
+        </div>
+        {b.ctaText && (
+          <div
+            className="relative mt-4 flex items-center gap-1 text-sm font-semibold"
+            style={{ color: b.textColor }}
+          >
+            <span>{b.ctaText}</span>
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function PromoBanner({
+  placement = "home_promotions",
+}: {
+  placement?: PlatformBannerPlacement;
+}) {
   const { data } = useQuery<{ banners: PlatformBanner[] }>({
-    queryKey: ["public-banners"],
-    queryFn: () => api.public.banners(),
+    queryKey: ["public-banners", placement],
+    queryFn: () => api.public.banners(placement),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -17,58 +180,26 @@ export function PromoBanner() {
 
   if (banners.length === 0) return null;
 
+  const showPromotionsHeading = placement === "home_promotions";
+
   return (
-    <section className="mt-8">
-      <h2 className="mb-4 text-lg font-bold sm:text-xl">Promotions</h2>
-      <div className="hide-scrollbar flex gap-4 overflow-x-auto pb-2">
-      {banners.map((b) => (
-        <a
-          key={b.id}
-          href={b.ctaLink || undefined}
-          className={cn(
-            "group relative flex min-w-[280px] flex-1 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-5 transition-all hover:shadow-xl sm:min-w-[300px] sm:p-6",
-            b.imageUrl
-              ? "bg-cover bg-center"
-              : `bg-gradient-to-r ${b.bgGradient}`
-          )}
-          style={
-            b.imageUrl
-              ? {
-                  backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${b.imageUrl})`,
-                  backgroundSize: `cover, ${b.imageScale ?? 100}%`,
-                  backgroundPosition: "center",
-                }
-              : undefined
-          }
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
-          <div className="relative">
-            <h3
-              className="text-lg font-bold leading-tight sm:text-xl"
-              style={{ color: b.textColor }}
-            >
-              {b.title}
-            </h3>
-            {b.subtitle && (
-              <p
-                className="mt-1 text-sm"
-                style={{ color: b.textColor, opacity: 0.8 }}
-              >
-                {b.subtitle}
-              </p>
-            )}
-          </div>
-          {b.ctaText && (
-            <div
-              className="relative mt-4 flex items-center gap-1 text-sm font-semibold"
-              style={{ color: b.textColor }}
-            >
-              <span>{b.ctaText}</span>
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-            </div>
-          )}
-        </a>
-      ))}
+    <section
+      className={
+        showPromotionsHeading ? "mt-8" : "my-6 first:mt-0 first:pt-0"
+      }
+    >
+      {showPromotionsHeading && (
+        <h2 className="mb-4 text-lg font-bold sm:text-xl">Promotions</h2>
+      )}
+      <div
+        className={cn(
+          "hide-scrollbar flex gap-4 overflow-x-auto pb-2",
+          showPromotionsHeading && "mt-0"
+        )}
+      >
+        {banners.map((b) => (
+          <PromoBannerCard key={b.id} b={b} />
+        ))}
       </div>
     </section>
   );

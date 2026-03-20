@@ -267,7 +267,7 @@ export interface ApiClient {
     deliveryCheck(ref: string, lat: number, lon: number): Promise<DeliveryCheck>;
     shopDeliveryCheck(ref: string, shopId: string, lat: number, lon: number): Promise<DeliveryCheck>;
     theme(app: string, ref?: string): Promise<ResolvedTheme | null>;
-    banners(): Promise<{ banners: PlatformBanner[] }>;
+    banners(placement?: string): Promise<{ banners: PlatformBanner[] }>;
   };
   superadmin: {
     auth: {
@@ -552,7 +552,10 @@ export function createApiClient(baseUrl: string): ApiClient {
         if (ref) qs.set("ref", ref);
         return get<ResolvedTheme>(`/api/public/theme?${qs}`).catch(() => null);
       },
-      banners: () => get("/api/public/banners"),
+      banners: (placement) =>
+        get(
+          `/api/public/banners?placement=${encodeURIComponent(placement ?? "home_promotions")}`
+        ),
     },
     superadmin: {
       auth: {

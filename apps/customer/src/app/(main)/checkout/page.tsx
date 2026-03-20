@@ -17,6 +17,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { api } from "@/lib/api";
 import type { DeliveryCheck } from "@delivio/types";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -104,6 +105,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
+      <PromoBanner placement="checkout" />
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
         <button

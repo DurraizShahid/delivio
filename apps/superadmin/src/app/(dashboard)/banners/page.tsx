@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Megaphone,
@@ -12,6 +12,8 @@ import {
   EyeOff,
   GripVertical,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,8 +30,30 @@ import {
   Separator,
   cn,
 } from "@delivio/ui";
-import type { PlatformBanner } from "@delivio/types";
+import {
+  getPlatformBannerAspectStyle,
+  getPlatformBannerImageBackgroundStyle,
+  getPlatformBannerImageOnlyBackgroundStyle,
+  getPlatformBannerSlideUrls,
+  PLATFORM_BANNER_ASPECT_PRESETS,
+  PLATFORM_BANNER_PLACEMENTS,
+  type PlatformBanner,
+  type PlatformBannerAspectPreset,
+  type PlatformBannerImageResize,
+  type PlatformBannerPlacement,
+} from "@delivio/types";
 import { api } from "@/lib/api";
+
+const IMAGE_RESIZE_OPTIONS: {
+  value: PlatformBannerImageResize;
+  label: string;
+}[] = [
+  { value: "fit", label: "Fit" },
+  { value: "stretch", label: "Stretch" },
+  { value: "tile", label: "Tile" },
+  { value: "center", label: "Center" },
+  { value: "span", label: "Span" },
+];
 
 const GRADIENT_PRESETS = [
   { label: "Sunset", value: "from-orange-500 to-rose-500" },
@@ -49,7 +73,12 @@ const emptyForm = {
   ctaText: "",
   ctaLink: "",
   imageUrl: "",
+  carouselEnabled: false,
+  imageUrls: [] as string[],
   imageScale: 100,
+  imageResize: "center" as PlatformBannerImageResize,
+  imageAspectPreset: "auto" as PlatformBannerAspectPreset,
+  placement: "home_promotions" as PlatformBannerPlacement,
   bgGradient: "from-orange-500 to-rose-500",
   textColor: "#ffffff",
   sortOrder: 0,
@@ -89,13 +118,28 @@ export default function BannersPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (form.carouselEnabled) {
+        const urls = form.imageUrls.map((u) => u.trim()).filter(Boolean);
+        if (urls.length === 0) {
+          throw new Error("Add at least one image URL for the carousel.");
+        }
+      }
       const payload: Record<string, unknown> = {
         title: form.title.trim(),
         subtitle: form.subtitle.trim() || null,
         ctaText: form.ctaText.trim() || null,
         ctaLink: form.ctaLink.trim() || null,
-        imageUrl: form.imageUrl.trim() || null,
+        imageUrl: form.carouselEnabled
+          ? (form.imageUrls.map((u) => u.trim()).filter(Boolean)[0] ?? null)
+          : form.imageUrl.trim() || null,
+        imageUrls: form.carouselEnabled
+          ? form.imageUrls.map((u) => u.trim()).filter(Boolean)
+          : [],
+        carouselEnabled: form.carouselEnabled,
         imageScale: form.imageScale,
+        imageResize: form.imageResize,
+        imageAspectPreset: form.imageAspectPreset,
+        placement: form.placement,
         bgGradient: form.bgGradient,
         textColor: form.textColor,
         sortOrder: form.sortOrder,
@@ -150,7 +194,15 @@ export default function BannersPage() {
       ctaText: b.ctaText ?? "",
       ctaLink: b.ctaLink ?? "",
       imageUrl: b.imageUrl ?? "",
+      carouselEnabled: b.carouselEnabled ?? false,
+      imageUrls:
+        b.carouselEnabled && (b.imageUrls?.length ?? 0) > 0
+          ? [...(b.imageUrls ?? [])]
+          : [],
       imageScale: b.imageScale ?? 100,
+      imageResize: b.imageResize ?? "center",
+      imageAspectPreset: b.imageAspectPreset ?? "auto",
+      placement: b.placement ?? "home_promotions",
       bgGradient: b.bgGradient,
       textColor: b.textColor,
       sortOrder: b.sortOrder,
@@ -243,6 +295,36 @@ export default function BannersPage() {
                   onChange={(e) => patch({ ctaLink: e.target.value })}
                 />
               </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Customer site placement
+                </label>
+                <select
+                  value={form.placement}
+                  onChange={(e) =>
+                    patch({
+                      placement: e.target.value as PlatformBannerPlacement,
+                    })
+                  }
+                  className={cn(
+                    "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  )}
+                >
+                  {PLATFORM_BANNER_PLACEMENTS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {
+                    PLATFORM_BANNER_PLACEMENTS.find(
+                      (p) => p.id === form.placement
+                    )?.customerArea
+                  }
+                </p>
+              </div>
             </div>
 
             <Separator />
@@ -313,20 +395,163 @@ export default function BannersPage() {
                   </div>
                 </div>
 
-                {/* Image URL */}
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Background Image URL (optional, overrides gradient)
+                    Recommended resolution (layout)
                   </label>
-                  <Input
-                    placeholder="https://example.com/banner.jpg"
-                    value={form.imageUrl}
-                    onChange={(e) => patch({ imageUrl: e.target.value })}
-                  />
+                  <select
+                    value={form.imageAspectPreset}
+                    onChange={(e) =>
+                      patch({
+                        imageAspectPreset: e.target
+                          .value as PlatformBannerAspectPreset,
+                      })
+                    }
+                    className={cn(
+                      "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    )}
+                  >
+                    {PLATFORM_BANNER_ASPECT_PRESETS.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.label} — {o.pixels}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Common pixel sizes for hero, social, and ad slots. Sets the
+                    card aspect ratio on the customer site (Auto keeps flexible
+                    height).
+                  </p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.carouselEnabled}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        if (on && form.imageUrls.length === 0) {
+                          patch({
+                            carouselEnabled: true,
+                            imageUrls: form.imageUrl.trim()
+                              ? [form.imageUrl]
+                              : [""],
+                          });
+                        } else if (!on) {
+                          patch({
+                            carouselEnabled: false,
+                            imageUrl:
+                              form.imageUrls.find((u) => u.trim()) ??
+                              form.imageUrl,
+                            imageUrls: [],
+                          });
+                        } else {
+                          patch({ carouselEnabled: on });
+                        }
+                      }}
+                      className="size-4 rounded border-border accent-primary"
+                    />
+                    <span className="font-medium">Carousel</span>
+                    <span className="text-xs text-muted-foreground">
+                      Rotate multiple background images on this banner
+                    </span>
+                  </label>
+                </div>
+
+                {form.carouselEnabled ? (
+                  <div className="sm:col-span-2 space-y-2">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Image URLs (one per slide)
+                    </label>
+                    {form.imageUrls.map((url, i) => (
+                      <div key={i} className="flex gap-2">
+                        <Input
+                          placeholder="https://example.com/slide.jpg"
+                          value={url}
+                          onChange={(e) => {
+                            const next = [...form.imageUrls];
+                            next[i] = e.target.value;
+                            patch({ imageUrls: next });
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={form.imageUrls.length <= 1}
+                          title="Remove slide"
+                          onClick={() =>
+                            patch({
+                              imageUrls: form.imageUrls.filter((_, j) => j !== i),
+                            })
+                          }
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() =>
+                        patch({ imageUrls: [...form.imageUrls, ""] })
+                      }
+                    >
+                      <Plus className="size-3.5" />
+                      Add slide
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Background Image URL (optional, overrides gradient)
+                    </label>
+                    <Input
+                      placeholder="https://example.com/banner.jpg"
+                      value={form.imageUrl}
+                      onChange={(e) => patch({ imageUrl: e.target.value })}
+                    />
+                  </div>
+                )}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Image resize
+                  </label>
+                  <select
+                    value={form.imageResize}
+                    onChange={(e) =>
+                      patch({
+                        imageResize: e.target
+                          .value as PlatformBannerImageResize,
+                      })
+                    }
+                    disabled={
+                      !(
+                        form.carouselEnabled
+                          ? form.imageUrls.some((u) => u.trim())
+                          : form.imageUrl.trim()
+                      )
+                    }
+                    className={cn(
+                      "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      "disabled:cursor-not-allowed disabled:opacity-50"
+                    )}
+                  >
+                    {IMAGE_RESIZE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="sm:col-span-2">
                   <div className="mb-1 flex items-center justify-between text-xs font-medium text-muted-foreground">
-                    <label>Image Scale</label>
+                    <label>Image scale</label>
                     <span>{form.imageScale}%</span>
                   </div>
                   <input
@@ -339,11 +564,19 @@ export default function BannersPage() {
                       patch({ imageScale: parseInt(e.target.value, 10) || 100 })
                     }
                     className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
-                    disabled={!form.imageUrl.trim()}
+                    disabled={
+                      !(
+                        form.carouselEnabled
+                          ? form.imageUrls.some((u) => u.trim())
+                          : form.imageUrl.trim()
+                      )
+                    }
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {form.imageUrl.trim()
-                      ? "Increase scale to zoom in, decrease to zoom out."
+                    {form.carouselEnabled
+                      ? form.imageUrls.some((u) => u.trim())
+                      : form.imageUrl.trim()
+                      ? "Zoom level for the image layer (works with every resize mode)."
                       : "Add an image URL to enable scaling."}
                   </p>
                 </div>
@@ -417,7 +650,11 @@ export default function BannersPage() {
                 bgGradient={form.bgGradient}
                 textColor={form.textColor}
                 imageUrl={form.imageUrl}
+                imageUrls={form.imageUrls}
+                carouselEnabled={form.carouselEnabled}
                 imageScale={form.imageScale}
+                imageResize={form.imageResize}
+                imageAspectPreset={form.imageAspectPreset}
               />
             </div>
 
@@ -458,7 +695,10 @@ export default function BannersPage() {
         />
       ) : (
         <div className="space-y-3">
-          {banners.map((b) => (
+          {banners.map((b) => {
+            const slides = getPlatformBannerSlideUrls(b);
+            const thumb = slides[0];
+            return (
             <Card
               key={b.id}
               className={cn(
@@ -475,11 +715,13 @@ export default function BannersPage() {
                       b.bgGradient
                     )}
                     style={
-                      b.imageUrl
+                      thumb
                         ? {
-                            backgroundImage: `url(${b.imageUrl})`,
-                            backgroundSize: `${b.imageScale ?? 100}%`,
-                            backgroundPosition: "center",
+                            backgroundImage: `url(${thumb})`,
+                            ...getPlatformBannerImageOnlyBackgroundStyle(
+                              b.imageScale ?? 100,
+                              b.imageResize
+                            ),
                           }
                         : undefined
                     }
@@ -508,6 +750,15 @@ export default function BannersPage() {
                             Inactive
                           </Badge>
                         )}
+                        {b.carouselEnabled &&
+                          (b.imageUrls?.length ?? 0) > 1 && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px]"
+                            >
+                              Carousel
+                            </Badge>
+                          )}
                       </div>
                       {b.subtitle && (
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -515,6 +766,12 @@ export default function BannersPage() {
                         </p>
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>
+                          Place:{" "}
+                          {PLATFORM_BANNER_PLACEMENTS.find(
+                            (p) => p.id === (b.placement ?? "home_promotions")
+                          )?.label ?? b.placement}
+                        </span>
                         <span>Order: {b.sortOrder}</span>
                         {b.ctaText && <span>CTA: {b.ctaText}</span>}
                         {b.startsAt && (
@@ -573,7 +830,8 @@ export default function BannersPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -587,7 +845,11 @@ function BannerPreview({
   bgGradient,
   textColor,
   imageUrl,
+  imageUrls,
+  carouselEnabled,
   imageScale,
+  imageResize,
+  imageAspectPreset,
 }: {
   title: string;
   subtitle: string;
@@ -595,28 +857,116 @@ function BannerPreview({
   bgGradient: string;
   textColor: string;
   imageUrl: string;
+  imageUrls: string[];
+  carouselEnabled: boolean;
   imageScale: number;
+  imageResize: PlatformBannerImageResize;
+  imageAspectPreset: PlatformBannerAspectPreset;
 }) {
+  const slides = getPlatformBannerSlideUrls({
+    carouselEnabled,
+    imageUrls,
+    imageUrl,
+  });
+  const hasImage = slides.length > 0;
+  const useLiveCarousel = Boolean(carouselEnabled && slides.length > 1);
+  const [slideIdx, setSlideIdx] = useState(0);
+
+  const slideKey = slides.join("|");
+  useEffect(() => {
+    setSlideIdx(0);
+  }, [slideKey]);
+
+  useEffect(() => {
+    if (!useLiveCarousel) return;
+    const t = setInterval(
+      () => setSlideIdx((i) => (i + 1) % slides.length),
+      5500
+    );
+    return () => clearInterval(t);
+  }, [useLiveCarousel, slides.length, slideKey]);
+
+  const aspectStyle = getPlatformBannerAspectStyle(imageAspectPreset);
+  const bgStyle = getPlatformBannerImageBackgroundStyle(imageScale, imageResize);
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-gradient-to-r p-6",
-        bgGradient
+        "relative overflow-hidden rounded-2xl p-6",
+        hasImage ? "bg-muted" : `bg-gradient-to-r ${bgGradient}`,
+        !aspectStyle.aspectRatio && "min-h-[160px]"
       )}
-      style={
-        imageUrl
-          ? {
-              backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${imageUrl})`,
-              backgroundSize: `cover, ${imageScale}%`,
-              backgroundPosition: "center",
-            }
-          : undefined
-      }
+      style={aspectStyle}
     >
-      <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_50%)]"
-      />
-      <div className="relative">
+      {hasImage && (
+        <div className="absolute inset-0 z-0">
+          {useLiveCarousel ? (
+            slides.map((url, i) => (
+              <div
+                key={`${url}-${i}`}
+                className={cn(
+                  "absolute inset-0 transition-opacity duration-500",
+                  i === slideIdx ? "opacity-100" : "opacity-0"
+                )}
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${url})`,
+                  ...bgStyle,
+                }}
+              />
+            ))
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0.2)), url(${slides[0]})`,
+                ...bgStyle,
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {useLiveCarousel && (
+        <>
+          <button
+            type="button"
+            className="absolute left-2 top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+            aria-label="Previous slide"
+            onClick={() =>
+              setSlideIdx((i) => (i - 1 + slides.length) % slides.length)
+            }
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 z-20 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md backdrop-blur-sm transition-colors hover:bg-background"
+            aria-label="Next slide"
+            onClick={() =>
+              setSlideIdx((i) => (i + 1) % slides.length)
+            }
+          >
+            <ChevronRight className="size-4" />
+          </button>
+          <div className="pointer-events-none absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-1.5">
+            {slides.map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full transition-colors",
+                  i === slideIdx ? "bg-white" : "bg-white/40"
+                )}
+              />
+            ))}
+          </div>
+          <span className="absolute right-2 top-2 z-20 rounded-md bg-background/85 px-2 py-0.5 text-[10px] text-muted-foreground backdrop-blur-sm">
+            Live · {slideIdx + 1}/{slides.length}
+          </span>
+        </>
+      )}
+
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
+      <div className="relative z-10">
         <h3
           className="text-xl font-bold leading-tight"
           style={{ color: textColor }}

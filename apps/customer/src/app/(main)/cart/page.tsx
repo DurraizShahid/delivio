@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button, Separator, PriceDisplay, cn } from "@delivio/ui";
 import { useCartStore } from "@/stores/cart-store";
+import { PromoBanner } from "@/components/promo-banner";
 
 export default function CartPage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 lg:px-8">
+      <PromoBanner placement="cart" />
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
         <button
